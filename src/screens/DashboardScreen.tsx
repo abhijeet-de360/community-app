@@ -26,6 +26,8 @@ export const DashboardScreen = ({ navigation }: any) => {
       body: "Join us for Ward 18's weekly cleanliness drive focusing on plastic segregation and neighborhood clean-up.",
       bgColor: '#028A3C',
       badgeColor: 'rgba(255, 255, 255, 0.2)',
+      // fds
+      // dfsd
       targetRoute: 'CampaignDetails',
       params: {
         campaign: {
