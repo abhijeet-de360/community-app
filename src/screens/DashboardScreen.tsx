@@ -6,15 +6,112 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  Alert,
 } from 'react-native';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
+const CARD_WIDTH = width - 48;
 
 export const DashboardScreen = ({ navigation }: any) => {
+  const [activeIndex, setActiveIndex] = React.useState(0);
+
+  const announcements = [
+    {
+      id: 'ann-1',
+      badge: 'NOTICE',
+      time: 'Today at 7:00 AM',
+      title: 'Cleanliness Drive this Saturday',
+      body: "Join us for Ward 18's weekly cleanliness drive focusing on plastic segregation and neighborhood clean-up.",
+      bgColor: '#028A3C',
+      badgeColor: 'rgba(255, 255, 255, 0.2)',
+      targetRoute: 'CampaignDetails',
+      params: {
+        campaign: {
+          id: 'camp-1',
+          title: 'Ward 18 Cleanliness Drive (Swachhta)',
+          type: 'Cleanliness' as const,
+          date: 'Saturday, July 25, 2026',
+          time: '07:30 AM - 10:30 AM',
+          location: 'Cathedral Sector Park',
+          description: 'Weekly cleaning campaign focusing on plastic segregation and neighborhood clean-up. Hand gloves, garbage bags, and refreshments will be provided to all volunteers.',
+          organizer: 'Ward 18 Sanitary Team',
+          status: 'Upcoming' as const,
+        }
+      }
+    },
+    {
+      id: 'ann-2',
+      badge: 'HEALTH CAMP',
+      time: 'Yesterday',
+      title: 'Free Health Screening Sunday',
+      body: 'Basic diagnostics, sugar/BP tests, and consultation with pediatricians and general physicians. Medicines free of cost.',
+      bgColor: '#0F766E',
+      badgeColor: 'rgba(255, 255, 255, 0.2)',
+      targetRoute: 'CampaignDetails',
+      params: {
+        campaign: {
+          id: 'camp-2',
+          title: 'Free Health Screening Camp',
+          type: 'Health' as const,
+          date: 'Sunday, July 26, 2026',
+          time: '09:00 AM - 02:00 PM',
+          location: 'Community Hall, Kohima Town',
+          description: 'Basic health diagnostics including blood pressure, sugar screening, and consultation with general physicians and pediatricians. Medicines will be distributed free of cost.',
+          organizer: 'Municipal Health Welfare Board',
+          status: 'Upcoming' as const,
+        }
+      }
+    },
+    {
+      id: 'ann-3',
+      badge: 'SEMINAR',
+      time: '2 days ago',
+      title: 'Water Harvesting Workshop',
+      body: 'Learn how to set up rainwater harvesting and domestic water-saving systems before the peak monsoon season.',
+      bgColor: '#1E40AF',
+      badgeColor: 'rgba(255, 255, 255, 0.2)',
+      targetRoute: 'CampaignDetails',
+      params: {
+        campaign: {
+          id: 'camp-3',
+          title: 'Water Segregation & Harvesting Seminar',
+          type: 'Awareness' as const,
+          date: 'Wednesday, July 29, 2026',
+          time: '04:00 PM - 06:00 PM',
+          location: 'Ward 18 Recreation Hall',
+          description: 'Interactive session to educate citizens on rainwater harvesting setups and domestic water saving methods before the peak monsoon. Technical experts will demonstrate models.',
+          organizer: 'Water Works Department',
+          status: 'Upcoming' as const,
+        }
+      }
+    },
+    {
+      id: 'ann-4',
+      badge: 'MAINTENANCE',
+      time: '3 days ago',
+      title: 'Zone B Water Pipeline Repair',
+      body: 'Urgent repairs scheduled on Tuesday, July 21st. Water supply will be suspended in Zone B from 10 AM to 2 PM.',
+      bgColor: '#B45309',
+      badgeColor: 'rgba(255, 255, 255, 0.2)',
+      targetRoute: 'Schedule',
+      params: {}
+    }
+  ];
+
+  const handleScroll = (event: any) => {
+    const slideSize = CARD_WIDTH + 12;
+    const index = Math.max(
+      0,
+      Math.min(
+        announcements.length - 1,
+        Math.round(event.nativeEvent.contentOffset.x / slideSize)
+      )
+    );
+    setActiveIndex(index);
+  };
+
   // Get time-based greeting for a modern, personalized touch
   const getGreeting = () => {
     const hrs = new Date().getHours();
@@ -45,7 +142,7 @@ export const DashboardScreen = ({ navigation }: any) => {
       id: 'gov_schemes',
       label: 'Govt Schemes',
       icon: 'schemes',
-      targetRoute: 'GovSchemes',
+      targetRoute: 'Schemes',
       iconBg: '#F3E5F5',
       iconColor: '#6A1B9A'
     },
@@ -96,7 +193,7 @@ export const DashboardScreen = ({ navigation }: any) => {
         <TouchableOpacity
           style={styles.notificationBell}
           activeOpacity={0.7}
-          onPress={() => navigation.navigate('Alerts')}
+          onPress={() => navigation.navigate('Notifications')}
         >
           <CustomIcon name="bell" size={20} color={COLORS.textPrimary} />
           <View style={styles.bellDot} />
@@ -107,25 +204,58 @@ export const DashboardScreen = ({ navigation }: any) => {
         {/* Latest Announcement Card */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Latest Announcement</Text>
-          <TouchableOpacity activeOpacity={0.6}>
+          <TouchableOpacity
+            activeOpacity={0.6}
+            onPress={() => navigation.navigate('Campaigns')}
+          >
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.announcementCard}>
-          <View style={styles.announcementHeader}>
-            <View style={styles.announcementBadge}>
-              <Text style={styles.announcementBadgeText}>NOTICE</Text>
-            </View>
-            <Text style={styles.announcementTime}>Today at 7:00 AM</Text>
+        <View style={styles.announcementContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={CARD_WIDTH + 12}
+            decelerationRate="fast"
+            contentContainerStyle={styles.announcementScrollContent}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            {announcements.map((ann) => (
+              <View key={ann.id} style={[styles.announcementCard, { backgroundColor: ann.bgColor, width: CARD_WIDTH }]}>
+                <View style={styles.announcementHeader}>
+                  <View style={[styles.announcementBadge, { backgroundColor: ann.badgeColor }]}>
+                    <Text style={styles.announcementBadgeText}>{ann.badge}</Text>
+                  </View>
+                  <Text style={styles.announcementTime}>{ann.time}</Text>
+                </View>
+                <Text style={styles.announcementTitle}>{ann.title}</Text>
+                <Text style={styles.announcementBody} numberOfLines={2} ellipsizeMode="tail">
+                  {ann.body}
+                </Text>
+                <TouchableOpacity
+                  style={styles.announcementLink}
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate(ann.targetRoute, ann.params)}
+                >
+                  <Text style={styles.announcementLinkText}>Read details →</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+
+          <View style={styles.paginationContainer}>
+            {announcements.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.paginationDot,
+                  activeIndex === index && styles.paginationDotActive,
+                ]}
+              />
+            ))}
           </View>
-          <Text style={styles.announcementTitle}>Cleanliness Drive this Saturday</Text>
-          <Text style={styles.announcementBody} numberOfLines={2} ellipsizeMode="tail">
-            Join us for a cleanliness drive on 25th May 2026 at 7:00 AM. Please keep your waste sorted. Let's make Ward 18 beautiful.
-          </Text>
-          <TouchableOpacity style={styles.announcementLink} activeOpacity={0.7}>
-            <Text style={styles.announcementLinkText}>Read details & guidelines →</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Quick Access Section */}
@@ -175,9 +305,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
-    elevation: 2,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -264,16 +394,43 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '700',
   },
+  announcementContainer: {
+    marginHorizontal: -20,
+    marginBottom: 8,
+  },
+  announcementScrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
   announcementCard: {
-    backgroundColor: '#1EAA5D', // Darker elegant emerald green
     borderRadius: 16,
     padding: 20,
     elevation: 4,
-    shadowColor: '#1EAA5D',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    marginBottom: 26,
+    marginRight: 12,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 20,
+  },
+  paginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    width: 16,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
   },
   announcementHeader: {
     flexDirection: 'row',

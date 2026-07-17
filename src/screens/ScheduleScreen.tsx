@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } f
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LottieView from 'lottie-react-native';
 
 export const ScheduleScreen = ({ navigation }: any) => {
   const [reminderEnabled, setReminderEnabled] = useState(false);
@@ -105,7 +104,7 @@ export const ScheduleScreen = ({ navigation }: any) => {
           activeOpacity={0.7}
           onPress={() => navigation.goBack()}
         >
-          <CustomIcon name="arrow-left" size={20} color={COLORS.primary} />
+          <CustomIcon name="arrow-left" size={20} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Collection Schedule</Text>
         <View style={{ width: 40 }} />
@@ -207,14 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     height: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.white,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    backgroundColor: COLORS.background,
   },
   backButton: {
     width: 40,
@@ -225,7 +217,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.textPrimary,
   },
   scrollContent: {
@@ -271,8 +263,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   boldText: {
-    fontWeight: '900',
-    color: '#A7FFD0', // Glowing neon-mint
+    fontWeight: '800',
   },
   warningSubtext: {
     fontSize: 12,
@@ -407,8 +398,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#db4444ff', // Rich dark red for inactive collection
   },
   dayChipSelected: {
-    borderColor: '#005e33ff', // Dark outline to indicate selection clearly
-    borderWidth: 2.5,
     // Soft shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },

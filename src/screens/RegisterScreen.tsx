@@ -11,9 +11,12 @@ import {
   ScrollView,
   Modal,
   FlatList,
+  Image,
+  Alert,
 } from 'react-native';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 const WARD_OPTIONS = [
   'Ward 18 - New Reserve',
@@ -31,6 +34,26 @@ export const RegisterScreen = ({ navigation }: any) => {
   const [address, setAddress] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [showWardModal, setShowWardModal] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+
+  const handlePickPhoto = () => {
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        quality: 0.8,
+      },
+      (response) => {
+        if (response.didCancel) return;
+        if (response.errorMessage) {
+          Alert.alert('Error', response.errorMessage);
+          return;
+        }
+        if (response.assets && response.assets[0]?.uri) {
+          setProfilePhoto(response.assets[0].uri);
+        }
+      }
+    );
+  };
 
   // Focus states for modern visual input highlights
   const [nameFocused, setNameFocused] = useState(false);
@@ -74,6 +97,33 @@ export const RegisterScreen = ({ navigation }: any) => {
           <Text style={styles.sectionSubtitle}>
             Please fill in your details to register as a citizen in Ward 18.
           </Text>
+
+          {/* Profile Photo Selection */}
+          <View style={styles.avatarSection}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              activeOpacity={0.8}
+              onPress={handlePickPhoto}
+            >
+              {profilePhoto ? (
+                <Image source={{ uri: profilePhoto }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <CustomIcon name="profile" size={36} color={COLORS.greyMedium} />
+                </View>
+              )}
+              <View style={styles.avatarBadge}>
+                <CustomIcon
+                  name={profilePhoto ? 'create' : 'add'}
+                  size={12}
+                  color={COLORS.white}
+                />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.avatarLabel}>
+              {profilePhoto ? 'Change Profile Photo' : 'Upload Profile Photo'}
+            </Text>
+          </View>
 
           {/* Form */}
           <View style={styles.form}>
@@ -174,7 +224,7 @@ export const RegisterScreen = ({ navigation }: any) => {
               styles.textAreaContainer,
               addressFocused && styles.inputContainerFocused
             ]}>
-              <View style={[styles.inputIcon, { paddingTop: 4 }]}>
+              <View style={[styles.inputIcon, styles.inputIconAddress]}>
                 <CustomIcon name="document" size={18} color={addressFocused ? COLORS.primary : COLORS.greyMedium} />
               </View>
               <TextInput
@@ -548,5 +598,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 1,
+  },
+  inputIconAddress: {
+    paddingTop: 4,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  avatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.greyLight,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  avatarImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  avatarPlaceholder: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: COLORS.greyLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginTop: 10,
   },
 });
