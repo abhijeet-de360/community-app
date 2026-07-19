@@ -20,6 +20,7 @@ interface Scheme {
   benefits: string;
   eligibility: string;
   portalUrl: string;
+  documents?: string;
 }
 
 export const GovSchemesScreen = ({ navigation }: any) => {
@@ -36,6 +37,7 @@ export const GovSchemesScreen = ({ navigation }: any) => {
       benefits: '• Working capital loan of up to ₹10,000.\n• Interest subsidy of 7% per annum on timely repayment.\n• Cashbacks up to ₹1,200/yr on digital transactions.',
       eligibility: '• Active street vendors in urban or rural municipal areas.\n• Possess Certificate of Vending or Identity Card.',
       portalUrl: 'https://pmsvanidhi.mohua.gov.in',
+      documents: '• Certificate of Vending / Identity Card\n• Aadhaar Card / Voter ID Card\n• Active Mobile Number linked to Aadhaar\n• Bank Account Passbook (with IFSC)',
     },
     {
       id: 'sch-2',
@@ -46,6 +48,7 @@ export const GovSchemesScreen = ({ navigation }: any) => {
       benefits: '• Direct Benefit Transfer (DBT) of ₹12,000 in two equal installments.\n• Free technical construction guidelines from municipal engineers.',
       eligibility: '• Urban households lacking safe sanitary toilet facilities.\n• Family income falls below specified municipal threshold.',
       portalUrl: 'https://swachhbharatmission.gov.in',
+      documents: '• Aadhaar Card / ID Proof\n• Bank Account Passbook (copy for DBT payment)\n• Photograph of current toilet site\n• Household Income Certificate',
     },
     {
       id: 'sch-3',
@@ -56,6 +59,7 @@ export const GovSchemesScreen = ({ navigation }: any) => {
       benefits: '• Interest subsidy up to 6.5% on home loans.\n• Subsidy amount up to ₹2.67 Lakhs credited directly to loan account.',
       eligibility: '• Beneficiary family must not own a pucca house anywhere in India.\n• EWS (income up to ₹3L/yr) or LIG (income up to ₹6L/yr).',
       portalUrl: 'https://pmay-urban.gov.in',
+      documents: '• Aadhaar Card / PAN Card\n• Income Proof (Salary slip / Form 16 / ITR)\n• Affidavit certifying no pucca house ownership in India\n• Property purchase / loan documents',
     },
     {
       id: 'sch-4',
@@ -66,6 +70,7 @@ export const GovSchemesScreen = ({ navigation }: any) => {
       benefits: '• Free installation of functional tap water pipeline.\n• Zero initial connection charges.\n• Regular water quality check updates via ward office.',
       eligibility: '• All urban/suburban homes currently relying on shared community hand pumps or tankers.',
       portalUrl: 'https://jaljeevanmission.gov.in',
+      documents: '• Property ownership document (Registry copy)\n• Latest Property Tax payment receipt\n• Aadhaar Card of homeowner\n• Electricity Bill showing active address',
     },
     {
       id: 'sch-5',
@@ -76,6 +81,7 @@ export const GovSchemesScreen = ({ navigation }: any) => {
       benefits: '• Direct monthly pension of ₹1,000 credited on the 1st of every month.\n• Free medical checkups at state government hospitals.',
       eligibility: '• Age must be 60 years or above.\n• Resident of the state with no active source of private regular income.',
       portalUrl: 'https://nsap.nic.in',
+      documents: '• Age Proof (Birth certificate / School certificate / Aadhaar)\n• Income Certificate (verifying no private regular income)\n• Bank Passbook (for pension deposits)\n• Domicile/Residence Certificate',
     },
   ];
 

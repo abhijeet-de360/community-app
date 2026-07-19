@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
@@ -12,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const CampaignDetailsScreen = ({ route, navigation }: any) => {
   const { campaign } = route.params || {};
+  const [isInterested, setIsInterested] = useState(false);
 
   if (!campaign) {
     return (
@@ -23,6 +25,15 @@ export const CampaignDetailsScreen = ({ route, navigation }: any) => {
       </SafeAreaView>
     );
   }
+
+  const handleToggleInterest = () => {
+    setIsInterested(true);
+    Alert.alert(
+      'Interest Registered',
+      `You have registered interest in "${campaign.title}". We will keep you updated about this campaign.`,
+      [{ text: 'OK' }]
+    );
+  };
 
 
 
@@ -104,7 +115,25 @@ export const CampaignDetailsScreen = ({ route, navigation }: any) => {
           </View>
         </View>
 
-
+        {/* Interest Button */}
+        <TouchableOpacity
+          style={[
+            styles.interestBtn,
+            isInterested ? styles.interestBtnActive : styles.interestBtnInactive,
+          ]}
+          activeOpacity={0.8}
+          onPress={handleToggleInterest}
+          disabled={isInterested}
+        >
+          <Text
+            style={[
+              styles.interestBtnText,
+              isInterested ? styles.interestBtnTextActive : styles.interestBtnTextInactive,
+            ]}
+          >
+            {isInterested ? 'Interested' : 'Show Interest'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -230,6 +259,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  interestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 24,
+    borderWidth: 2,
+  },
+  interestBtnInactive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  interestBtnActive: {
+    backgroundColor: COLORS.greyLight,
+    borderColor: COLORS.border,
+  },
+  interestBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  interestBtnTextInactive: {
+    color: COLORS.white,
+  },
+  interestBtnTextActive: {
+    color: COLORS.textSecondary,
   },
 
   errorContainer: {

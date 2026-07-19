@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Linking,
 } from 'react-native';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
@@ -25,20 +26,18 @@ export const SchemeDetailsScreen = ({ route, navigation }: any) => {
     );
   }
 
-  const handleApply = () => {
-    Alert.alert(
-      'Apply for Scheme',
-      `To apply for "${scheme.title}", please visit the official portal: ${scheme.portalUrl} or visit Ward Office 18 with the following documents:\n\n1. Aadhaar Card\n2. Address Proof\n3. Income Certificate`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Understand',
-          onPress: () => {
-            Alert.alert('Guidance Sent', 'Detailed guidelines and document checklist have been sent to your registered mobile number.');
-          },
-        },
-      ]
-    );
+  const handleApply = async () => {
+    const url = scheme.portalUrl;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', `Cannot open the portal: ${url}`);
+      }
+    } catch {
+      Alert.alert('Error', 'An error occurred while trying to open the portal.');
+    }
   };
 
   return (
@@ -91,6 +90,19 @@ export const SchemeDetailsScreen = ({ route, navigation }: any) => {
             <Text style={styles.sectionTitleIconText}>Eligibility Criteria</Text>
           </View>
           <Text style={styles.sectionText}>{scheme.eligibility}</Text>
+        </View>
+
+        <View style={styles.sectionDivider} />
+
+        {/* Required Documents Section */}
+        <View style={styles.section}>
+          <View style={styles.cardHeaderRow}>
+            <CustomIcon name="document" size={20} color={COLORS.primary} />
+            <Text style={styles.sectionTitleIconText}>Required Documents</Text>
+          </View>
+          <Text style={styles.sectionText}>
+            {scheme.documents || '• Aadhaar Card\n• Address Proof\n• Income Certificate'}
+          </Text>
         </View>
 
         <View style={styles.sectionDivider} />

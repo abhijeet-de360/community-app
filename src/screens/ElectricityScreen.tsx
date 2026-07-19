@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 
 export const ElectricityScreen = ({ navigation }: any) => {
   return (
@@ -15,11 +16,20 @@ export const ElectricityScreen = ({ navigation }: any) => {
           <CustomIcon name="arrow-left" size={20} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Electricity Dues</Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.headerSpacer} />
       </View>
-      <View style={styles.content}>
-        <Text style={styles.title}>Pay Electricity Bill Screen</Text>
-        <Text style={styles.subtitle}>Electricity billing details and secure checkout portals will go here.</Text>
+      <View style={styles.webviewContainer}>
+        <WebView
+          source={{ uri: 'https://prepaid.dopn.gov.in/new/dashboard' }}
+          style={styles.webview}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Loading Payment Portal...</Text>
+            </View>
+          )}
+        />
       </View>
     </SafeAreaView>
   );
@@ -52,21 +62,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.textPrimary,
   },
-  content: {
+  headerSpacer: {
+    width: 40,
+  },
+  webviewContainer: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  webview: {
+    flex: 1,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
-    paddingHorizontal: 24,
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  subtitle: {
+  loadingText: {
+    marginTop: 10,
     fontSize: 14,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    fontWeight: '600',
   },
 });
