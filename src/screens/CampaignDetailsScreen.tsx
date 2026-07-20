@@ -98,7 +98,7 @@ export const CampaignDetailsScreen = ({ route, navigation }: any) => {
               <CustomIcon name="home" size={16} color={COLORS.primary} />
             </View>
             <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Location / Venue</Text>
+              <Text style={styles.infoLabel}>Location</Text>
               <Text style={styles.infoValue}>{campaign.location}</Text>
             </View>
           </View>
