@@ -17,6 +17,7 @@ import {
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { requestStoragePermission } from '../utils/permissionManager';
 
 const WARD_OPTIONS = [
   'Ward 18 - New Reserve',
@@ -35,8 +36,15 @@ export const RegisterScreen = ({ navigation }: any) => {
   const [agreed, setAgreed] = useState(false);
   const [showWardModal, setShowWardModal] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [voterCardFront, setVoterCardFront] = useState<string | null>(null);
+  const [voterCardBack, setVoterCardBack] = useState<string | null>(null);
 
-  const handlePickPhoto = () => {
+  const handlePickPhoto = async () => {
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) {
+      Alert.alert('Permission Denied', 'Gallery access is required to select a profile photo.');
+      return;
+    }
     launchImageLibrary(
       {
         mediaType: 'photo',
@@ -55,6 +63,34 @@ export const RegisterScreen = ({ navigation }: any) => {
     );
   };
 
+  const handlePickVoterCard = async (side: 'front' | 'back') => {
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) {
+      Alert.alert('Permission Denied', 'Gallery access is required to select voter card photos.');
+      return;
+    }
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        quality: 0.8,
+      },
+      (response) => {
+        if (response.didCancel) return;
+        if (response.errorMessage) {
+          Alert.alert('Error', response.errorMessage);
+          return;
+        }
+        if (response.assets && response.assets[0]?.uri) {
+          if (side === 'front') {
+            setVoterCardFront(response.assets[0].uri);
+          } else {
+            setVoterCardBack(response.assets[0].uri);
+          }
+        }
+      }
+    );
+  };
+
   // Focus states for modern visual input highlights
   const [nameFocused, setNameFocused] = useState(false);
   const [mobileFocused, setMobileFocused] = useState(false);
@@ -62,8 +98,41 @@ export const RegisterScreen = ({ navigation }: any) => {
   const [addressFocused, setAddressFocused] = useState(false);
 
   const handleRegister = () => {
-    // Navigate straight to Main App Dashboard
-    navigation.replace('MainTabs');
+    if (!profilePhoto) {
+      Alert.alert('Validation Error', 'Please upload a profile photo.');
+      return;
+    }
+    if (!name.trim()) {
+      Alert.alert('Validation Error', 'Please enter your full name.');
+      return;
+    }
+    if (!mobile.trim() || mobile.trim().length < 10) {
+      Alert.alert('Validation Error', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (!epicNumber.trim()) {
+      Alert.alert('Validation Error', 'Please enter your EPIC (Voter ID) number.');
+      return;
+    }
+    if (!voterCardFront) {
+      Alert.alert('Validation Error', 'Please upload the front side of your voter card.');
+      return;
+    }
+    if (!voterCardBack) {
+      Alert.alert('Validation Error', 'Please upload the back side of your voter card.');
+      return;
+    }
+    if (!ward) {
+      Alert.alert('Validation Error', 'Please select your ward/area.');
+      return;
+    }
+    if (!agreed) {
+      Alert.alert('Validation Error', 'Please agree to the Terms of Service & Privacy Policy.');
+      return;
+    }
+
+    // Navigate to Pending Screen for profile verification
+    navigation.replace('Pending');
   };
 
   const selectWard = (selected: string) => {
@@ -121,14 +190,14 @@ export const RegisterScreen = ({ navigation }: any) => {
               </View>
             </TouchableOpacity>
             <Text style={styles.avatarLabel}>
-              {profilePhoto ? 'Change Profile Photo' : 'Upload Profile Photo'}
+              {profilePhoto ? 'Change Profile Photo' : 'Upload Profile Photo'} <Text style={{ color: COLORS.danger }}>*</Text>
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.form}>
             {/* Full Name */}
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={styles.label}>Full Name <Text style={{ color: COLORS.danger }}>*</Text></Text>
             <View style={[
               styles.inputContainer,
               nameFocused && styles.inputContainerFocused
@@ -148,7 +217,7 @@ export const RegisterScreen = ({ navigation }: any) => {
             </View>
 
             {/* Mobile Number */}
-            <Text style={styles.label}>Mobile Number</Text>
+            <Text style={styles.label}>Mobile Number <Text style={{ color: COLORS.danger }}>*</Text></Text>
             <View style={[
               styles.inputContainer,
               mobileFocused && styles.inputContainerFocused
@@ -170,7 +239,7 @@ export const RegisterScreen = ({ navigation }: any) => {
             </View>
 
             {/* EPIC Number */}
-            <Text style={styles.label}>EPIC (Voter ID) Number</Text>
+            <Text style={styles.label}>EPIC (Voter ID) Number <Text style={{ color: COLORS.danger }}>*</Text></Text>
             <View style={[
               styles.inputContainer,
               epicFocused && styles.inputContainerFocused
@@ -190,8 +259,58 @@ export const RegisterScreen = ({ navigation }: any) => {
               />
             </View>
 
+            {/* Voter Card Images (Front & Back) */}
+            <Text style={styles.label}>Voter Card Photos (Front & Back) <Text style={{ color: COLORS.danger }}>*</Text></Text>
+            <View style={styles.voterCardRow}>
+              {/* Front Side */}
+              <TouchableOpacity
+                style={styles.voterCardContainer}
+                activeOpacity={0.8}
+                onPress={() => handlePickVoterCard('front')}
+              >
+                {voterCardFront ? (
+                  <View style={styles.voterCardImageContainer}>
+                    <Image source={{ uri: voterCardFront }} style={styles.voterCardImage} />
+                    <View style={styles.voterCardBadge}>
+                      <CustomIcon name="create" size={10} color={COLORS.white} />
+                    </View>
+                    <Text style={styles.voterCardActiveLabel}>Front Side</Text>
+                  </View>
+                ) : (
+                  <View style={styles.voterCardPlaceholder}>
+                    <CustomIcon name="card" size={24} color={COLORS.greyMedium} />
+                    <Text style={styles.voterCardPlaceholderTitle}>Front Side</Text>
+                    <Text style={styles.voterCardPlaceholderSub}>Tap to upload</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Back Side */}
+              <TouchableOpacity
+                style={styles.voterCardContainer}
+                activeOpacity={0.8}
+                onPress={() => handlePickVoterCard('back')}
+              >
+                {voterCardBack ? (
+                  <View style={styles.voterCardImageContainer}>
+                    <Image source={{ uri: voterCardBack }} style={styles.voterCardImage} />
+                    <View style={styles.voterCardBadge}>
+                      <CustomIcon name="create" size={10} color={COLORS.white} />
+                    </View>
+                    <Text style={styles.voterCardActiveLabel}>Back Side</Text>
+                  </View>
+                ) : (
+                  <View style={styles.voterCardPlaceholder}>
+                    <CustomIcon name="card" size={24} color={COLORS.greyMedium} />
+                    <Text style={styles.voterCardPlaceholderTitle}>Back Side</Text>
+                    <Text style={styles.voterCardPlaceholderSub}>Tap to upload</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
             {/* Ward Selector */}
-            <Text style={styles.label}>Select Ward / Area</Text>
+            <Text style={styles.label}>Select Ward / Area <Text style={{ color: COLORS.danger }}>*</Text></Text>
             <TouchableOpacity
               style={[
                 styles.inputContainer, 
@@ -649,5 +768,74 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
     marginTop: 10,
+  },
+  voterCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  voterCardContainer: {
+    width: '48%',
+    height: 120,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    backgroundColor: COLORS.white,
+    overflow: 'hidden',
+  },
+  voterCardPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: COLORS.greyLight,
+  },
+  voterCardPlaceholderTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginTop: 6,
+  },
+  voterCardPlaceholderSub: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  voterCardImageContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  voterCardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  voterCardBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: COLORS.primary,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1.5,
+  },
+  voterCardActiveLabel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(26, 37, 32, 0.6)',
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingVertical: 4,
   },
 });

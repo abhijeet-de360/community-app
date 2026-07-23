@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Dimensions, Image,
 import { COLORS } from '../theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
+import { requestStoragePermission } from '../utils/permissionManager';
 
 const { height } = Dimensions.get('window');
 
@@ -30,6 +31,9 @@ export const SplashScreen = ({ navigation }: any) => {
   const slideAnim = React.useRef(new Animated.Value(20)).current;
 
   React.useEffect(() => {
+    // Request permission on app startup / splash screen
+    requestStoragePermission();
+
     // Setup interval to switch slides every 3.5 seconds
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);

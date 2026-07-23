@@ -11,6 +11,7 @@ import { SplashScreen } from '../screens/SplashScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { PendingScreen } from '../screens/PendingScreen';
 
 // Import tab screens
 import { PaymentsScreen } from '../screens/PaymentsScreen';
@@ -22,6 +23,7 @@ import { ScheduleScreen } from '../screens/ScheduleScreen';
 import { ComplaintsScreen } from '../screens/ComplaintsScreen';
 import { GovSchemesScreen } from '../screens/GovSchemesScreen';
 import { SchemeDetailsScreen } from '../screens/SchemeDetailsScreen';
+import { WebDocViewerScreen } from '../screens/WebDocViewerScreen';
 import { CampaignDetailsScreen } from '../screens/CampaignDetailsScreen';
 import { ContactsScreen } from '../screens/ContactsScreen';
 import { ElectricityScreen } from '../screens/ElectricityScreen';
@@ -165,6 +167,7 @@ export const AppNavigator = () => {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Pending" component={PendingScreen} />
       <Stack.Screen name="MainTabs" component={TabNavigator} />
 
       {/* Quick Access Stack Screens */}
@@ -172,6 +175,7 @@ export const AppNavigator = () => {
       <Stack.Screen name="Complaints" component={ComplaintsScreen} />
       <Stack.Screen name="GovSchemes" component={GovSchemesScreen} />
       <Stack.Screen name="SchemeDetails" component={SchemeDetailsScreen} />
+      <Stack.Screen name="WebDocViewer" component={WebDocViewerScreen} />
       <Stack.Screen name="CampaignDetails" component={CampaignDetailsScreen} />
       <Stack.Screen name="Contacts" component={ContactsScreen} />
       <Stack.Screen name="ElectricityBill" component={ElectricityScreen} />

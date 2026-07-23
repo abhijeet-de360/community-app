@@ -107,6 +107,33 @@ export const SchemeDetailsScreen = ({ route, navigation }: any) => {
 
         <View style={styles.sectionDivider} />
 
+        {/* Official Resource Section */}
+        <View style={styles.section}>
+          <View style={styles.cardHeaderRow}>
+            <CustomIcon name="document" size={20} color={COLORS.primary} />
+            <Text style={styles.sectionTitleIconText}>Official Resource</Text>
+          </View>
+          
+          <TouchableOpacity
+            style={styles.resourceLinkRow}
+            activeOpacity={0.7}
+            onPress={() =>
+              navigation.navigate('WebDocViewer', {
+                url: scheme.notificationUrl || 'https://elmley-craft.files.svdcdn.com/production/files/1-Test_PDF.pdf',
+                title: 'Official Resource Document',
+              })
+            }
+          >
+            <View style={styles.resourceLeft}>
+              <CustomIcon name="document" size={18} color={COLORS.primary} />
+              <Text style={styles.resourceLinkText}>Official Resource Document (PDF)</Text>
+            </View>
+            <CustomIcon name="arrow-right" size={14} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sectionDivider} />
+
         {/* Official Portal Notice */}
         <View style={styles.portalContainer}>
           <Text style={styles.portalLabel}>Official Online Portal</Text>
@@ -119,7 +146,7 @@ export const SchemeDetailsScreen = ({ route, navigation }: any) => {
           activeOpacity={0.8}
           onPress={handleApply}
         >
-          <Text style={styles.applyBtnText}>Apply Online</Text>
+          <Text style={styles.applyBtnText}>Apply Online (External Browser)</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -274,5 +301,28 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 14,
     fontWeight: '700',
+  },
+  resourceLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    backgroundColor: COLORS.greyLight,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  resourceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resourceLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginLeft: 10,
+  },
+  resourceDivider: {
+    height: 8,
   },
 });
