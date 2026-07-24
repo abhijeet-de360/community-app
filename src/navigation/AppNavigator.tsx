@@ -29,6 +29,7 @@ import { ContactsScreen } from '../screens/ContactsScreen';
 import { ElectricityScreen } from '../screens/ElectricityScreen';
 import { EmergencyScreen } from '../screens/EmergencyScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { HelplineScreen } from '../screens/HelplineScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -182,6 +183,7 @@ export const AppNavigator = () => {
       <Stack.Screen name="Emergency" component={EmergencyScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
+      <Stack.Screen name="Helpline" component={HelplineScreen} />
     </Stack.Navigator>
   );
 };
