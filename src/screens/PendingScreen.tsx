@@ -128,6 +128,24 @@ export const PendingScreen = ({ navigation }: any) => {
     navigation.navigate('Helpline');
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout Confirmation',
+      'Are you sure you want to log out from your profile verification session?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => navigation.replace('Login'),
+        },
+      ]
+    );
+  };
+
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -147,14 +165,7 @@ export const PendingScreen = ({ navigation }: any) => {
       subtitle: 'Validating EPIC Voter Card & Address Proof',
       status: 'in-progress',
       time: 'Under active review',
-    },
-    {
-      id: 3,
-      title: 'Account Full Activation',
-      subtitle: 'Full access to civic complaints & local schemes',
-      status: 'pending',
-      time: 'Final step',
-    },
+    }
   ];
 
   return (
@@ -167,29 +178,28 @@ export const PendingScreen = ({ navigation }: any) => {
       </View>
 
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Animated Hero Icon */}
         <View style={styles.heroSection}>
-          <View style={styles.middleBadgeRing}>
-            <View style={styles.innerBadgeContainer}>
-              <Video
-                source={require('../assets/videos/search-file.mp4')}
-                style={styles.videoIcon}
-                repeat={true}
-                muted={true}
-                paused={false}
-                resizeMode="contain"
-              />
-            </View>
+          <View style={styles.badgeContainer}>
+            <Video
+              source={require('../assets/videos/search-file.mp4')}
+              style={styles.videoIcon}
+              repeat={true}
+              muted={true}
+              paused={false}
+              resizeMode="contain"
+            />
           </View>
         </View>
 
         {/* Header Text */}
         <Text style={styles.mainTitle}>Verification in Progress</Text>
         <Text style={styles.subTitle}>
-          Your citizen application has been received and is being verified by Ward 18 officials to ensure authentic neighborhood access.
+          Your citizen application has been received and is being verified within 12-24 hours.
         </Text>
 
         <Animated.View
@@ -286,17 +296,6 @@ export const PendingScreen = ({ navigation }: any) => {
             </View>
           </View>
 
-          {/* Info Banner */}
-          <View style={styles.infoBanner}>
-            <CustomIcon name="information-circle-outline" size={22} color="#0D9488" />
-            <View style={styles.infoBannerTextCol}>
-              <Text style={styles.infoBannerTitle}>Estimated Turnaround</Text>
-              <Text style={styles.infoBannerBody}>
-                Standard verification takes 12–24 business hours. An SMS notification will be sent once approved.
-              </Text>
-            </View>
-          </View>
-
           {/* Dedicated Support Card */}
           <TouchableOpacity
             style={styles.supportCard}
@@ -312,38 +311,39 @@ export const PendingScreen = ({ navigation }: any) => {
             </View>
             <CustomIcon name="chevron-forward-outline" size={18} color={COLORS.textSecondary} />
           </TouchableOpacity>
+
+          {/* Action Buttons under Need Help */}
+          <View style={styles.actionContainer}>
+            <TouchableOpacity
+              style={[styles.checkButton, checking && styles.checkButtonDisabled]}
+              activeOpacity={0.85}
+              onPress={handleCheckStatus}
+              disabled={checking}
+            >
+              {checking ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                  <Text style={styles.checkButtonText}>  Checking Server...</Text>
+                </View>
+              ) : (
+                <View style={styles.btnContentRow}>
+                  <CustomIcon name="refresh-outline" size={20} color={COLORS.white} />
+                  <Text style={styles.checkButtonText}>  Refresh Status</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.logoutButton}
+              activeOpacity={0.7}
+              onPress={handleLogout}
+            >
+              <CustomIcon name="log-out-outline" size={16} color={COLORS.danger} />
+              <Text style={styles.logoutButtonText}>  Logout</Text>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </ScrollView>
-
-      {/* Fixed Bottom Action Container */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[styles.checkButton, checking && styles.checkButtonDisabled]}
-          activeOpacity={0.85}
-          onPress={handleCheckStatus}
-          disabled={checking}
-        >
-          {checking ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator size="small" color={COLORS.white} />
-              <Text style={styles.checkButtonText}>  Checking Server...</Text>
-            </View>
-          ) : (
-            <View style={styles.btnContentRow}>
-              <CustomIcon name="refresh-outline" size={20} color={COLORS.white} />
-              <Text style={styles.checkButtonText}>  Refresh Status</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.replace('Login')}
-        >
-          <CustomIcon name="arrow-back-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.backButtonText}>  Back to Login</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -361,81 +361,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.background,
+    zIndex: 10,
+    elevation: 3,
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
+  scrollView: {
+    // flex: 1,
+    width: '100%',
+  },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 24,
-    alignItems: 'center',
   },
   heroSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16
+    marginTop: 16,
+    marginBottom: 16,
   },
-  outerGlowRing: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-  },
-  middleBadgeRing: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
+  badgeContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  innerBadgeContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gifIcon: {
-    width: 52,
-    height: 52,
+    overflow: 'hidden',
   },
   videoIcon: {
     width: 80,
     height: 80,
-    borderRadius: 25,
+    borderRadius: 40,
     overflow: 'hidden',
-  },
-  statusPill: {
-    position: 'absolute',
-    bottom: -6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderWidth: 1.5,
-    borderColor: '#FED7AA',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  pulsingDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: COLORS.warning,
-    marginRight: 6,
-  },
-  statusPillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.warning,
-    letterSpacing: 0.6,
   },
   mainTitle: {
     fontSize: 24,
@@ -500,14 +461,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 18,
+    paddingBottom: 0,
     borderWidth: 1,
     borderColor: COLORS.border,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 3 },
+    // shadowOpacity: 0.03,
+    // shadowRadius: 8,
+    // elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -645,12 +607,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 16,
     padding: 14,
-    marginTop: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.02,
+    // shadowRadius: 4,
+    // elevation: 1,
   },
   supportIconBox: {
     width: 38,
@@ -674,13 +635,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textSecondary,
   },
-  bottomBar: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 8 : 16,
-    backgroundColor: COLORS.background,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+  actionContainer: {
+    width: '100%',
+    marginTop: 20,
+    marginBottom: 16,
   },
   checkButton: {
     width: '100%',
@@ -717,16 +675,16 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     letterSpacing: 0.3,
   },
-  backButton: {
+  logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
   },
-  backButtonText: {
+  logoutButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: COLORS.danger,
   },
 });
 
