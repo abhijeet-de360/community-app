@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 interface Campaign {
   id: string;
   title: string;
-  type: 'Cleanliness' | 'Health' | 'Awareness';
+  type: 'Cleanliness' | 'Health Screening' | 'Health' | 'Awareness' | 'Other';
   date: string;
   time: string;
   location: string;
@@ -74,7 +74,7 @@ export const CampaignsScreen = ({ navigation }: any) => {
     },
   ];
 
-  const types = ['All', 'Cleanliness', 'Health', 'Awareness'];
+  const types = ['All', 'Cleanliness', 'Health Screening', 'Awareness', 'Other'];
 
   const filteredCampaigns = campaigns.filter((camp) => {
     const matchesType = selectedType === 'All' || camp.type === selectedType;

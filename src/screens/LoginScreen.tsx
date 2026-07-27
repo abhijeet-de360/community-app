@@ -9,26 +9,64 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { sendOtp, verifyOtp } from '../store/authSlice';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const LoginScreen = ({ navigation }: any) => {
+  const dispatch = useDispatch();
+  const { status } = useSelector((state: any) => state.auth);
+  const isLoading = status === 'loading';
+
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const otpRefs = React.useRef<Array<TextInput | null>>([]);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
-  const handleGetOtp = () => {
-    // Simulate sending OTP without any real network request or validation
-    setOtpSent(true);
+  const handleGetOtp = async () => {
+    if (!mobileNumber || mobileNumber.length < 10) {
+      return;
+    }
+    setOtp(['', '', '', '', '', '']);
+    try {
+      await dispatch(sendOtp(mobileNumber) as any);
+      setOtpSent(true);
+    } catch (error) {
+      // Toast handles error notification (e.g. "User not registered. Please register first.")
+    }
   };
 
-  const handleLogin = () => {
-    // Navigate straight to Main App Dashboard (which is our Tab Navigator)
-    navigation.replace('MainTabs');
+  const handleLogin = async () => {
+    const fullOtp = otp.join('');
+    if (fullOtp.length < 6) return;
+
+    const payload = {
+      phoneNumber: mobileNumber,
+      otp: fullOtp,
+    };
+
+    try {
+      const data = await dispatch(verifyOtp(payload) as any);
+      const userStatus = data?.user?.status;
+      if (userStatus === 'active') {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Pending' }],
+        });
+      }
+    } catch (err) {
+      console.error('OTP verification failed:', err);
+    }
   };
 
   const handleOtpChange = (text: string, index: number) => {
@@ -98,11 +136,19 @@ export const LoginScreen = ({ navigation }: any) => {
               </View>
 
               <TouchableOpacity
-                style={styles.primaryButton}
+                style={[
+                  styles.primaryButton,
+                  (isLoading || mobileNumber.length < 10) && { opacity: 0.5 },
+                ]}
                 activeOpacity={0.8}
+                disabled={isLoading || mobileNumber.length < 10}
                 onPress={handleGetOtp}
               >
-                <Text style={styles.primaryButtonText}>Get OTP</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Get OTP</Text>
+                )}
               </TouchableOpacity>
 
               <View style={styles.registerContainer}>
@@ -144,11 +190,19 @@ export const LoginScreen = ({ navigation }: any) => {
               </View>
 
               <TouchableOpacity
-                style={styles.primaryButton}
+                style={[
+                  styles.primaryButton,
+                  (isLoading || otp.join('').length < 6) && { opacity: 0.5 },
+                ]}
                 activeOpacity={0.8}
+                disabled={isLoading || otp.join('').length < 6}
                 onPress={handleLogin}
               >
-                <Text style={styles.primaryButtonText}>Verify & Login</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Verify & Login</Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity

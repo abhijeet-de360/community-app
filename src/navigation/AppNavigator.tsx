@@ -7,7 +7,6 @@ import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 
 // Import core screens
-import { SplashScreen } from '../screens/SplashScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -30,6 +29,8 @@ import { ElectricityScreen } from '../screens/ElectricityScreen';
 import { EmergencyScreen } from '../screens/EmergencyScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { HelplineScreen } from '../screens/HelplineScreen';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { SplashScreen } from '../screens/SplashScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -166,6 +167,7 @@ export const AppNavigator = () => {
     >
       {/* Core Auth & Main Tabs */}
       <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Pending" component={PendingScreen} />

@@ -1,125 +1,99 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Dimensions, Image, Animated } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  StatusBar, 
+  Animated, 
+  Easing,
+  ActivityIndicator
+} from 'react-native';
+import { useSelector } from 'react-redux';
 import { COLORS } from '../theme/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useIsFocused } from '@react-navigation/native';
-import { requestStoragePermission } from '../utils/permissionManager';
-
-const { height } = Dimensions.get('window');
-
-const slides = [
-  {
-    title: "Smart Citizen Portal",
-    description: "Access municipal updates and stay connected with your ward community services."
-  },
-  {
-    title: "Instant Bill Payments",
-    description: "Pay sanitation fees, utility bills, and local taxes directly from your mobile phone securely."
-  },
-  {
-    title: "Quick Issue Reporting",
-    description: "Spotted a pothole, garbage dump, or broken streetlight? Report it directly to ward officials with photos."
-  }
-];
+import { localService } from '../shared/_session/local';
 
 export const SplashScreen = ({ navigation }: any) => {
-  const insets = useSafeAreaInsets();
-  const isFocused = useIsFocused();
+  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const [currentSlide, setCurrentSlide] = React.useState(0);
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const slideAnim = React.useRef(new Animated.Value(20)).current;
+  const { isAuthenticated } = useSelector((state: any) => state.auth);
 
-  React.useEffect(() => {
-    // Request permission on app startup / splash screen
-    requestStoragePermission();
-
-    // Setup interval to switch slides every 3.5 seconds
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 3500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  React.useEffect(() => {
-    // Run animation when currentSlide changes
-    fadeAnim.setValue(0);
-    slideAnim.setValue(20);
-
+  useEffect(() => {
+    // 1. Entrance animation
     Animated.parallel([
-      Animated.timing(fadeAnim, {
+      Animated.timing(logoOpacity, {
         toValue: 1,
-        duration: 400,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
+      Animated.spring(logoScale, {
+        toValue: 1,
+        friction: 6,
+        tension: 40,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [currentSlide, fadeAnim, slideAnim]);
+
+    // 2. Pulse animation for initializing effect
+    const loopPulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loopPulse.start();
+
+    // 3. Check authentication and navigate after 2 seconds
+    const timer = setTimeout(async () => {
+      const token = await localService.get('token');
+      if (token || isAuthenticated) {
+        navigation.replace('MainTabs');
+      } else {
+        navigation.replace('Onboarding');
+      }
+    }, 2000);
+
+    return () => {
+      clearTimeout(timer);
+      loopPulse.stop();
+    };
+  }, [navigation, logoOpacity, logoScale, pulseAnim, isAuthenticated]);
 
   return (
     <View style={styles.container}>
-      {isFocused && <StatusBar hidden={true} />}
-
-      {/* Top Header Logo */}
-      <View style={[styles.header, { marginTop: insets.top + 30 }]}>
-        <Text style={styles.headerText}>WARD 18</Text>
-        <Text style={styles.headerSubtitle}>Citizen Services</Text>
-      </View>
-
-      {/* Center Illustration Frame */}
-      <View style={styles.centerContainer}>
-        <View style={styles.illustrationCard}>
-          <Image
-            source={require('../assets/images/splash_skyline.png')}
-            style={styles.illustrationImage}
-            resizeMode="contain"
-          />
-        </View>
-      </View>
-
-      {/* Bottom Sheet Card */}
-      <View style={[styles.bottomCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateX: slideAnim }] }}>
-          <Text style={styles.title}>{slides[currentSlide].title}</Text>
-          <Text style={styles.description}>{slides[currentSlide].description}</Text>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      
+      {/* Animated Logo Container */}
+      <Animated.View 
+        style={[
+          styles.logoContainer, 
+          { 
+            opacity: logoOpacity,
+            transform: [{ scale: logoScale }] 
+          }
+        ]}
+      >
+        <Animated.View style={[styles.iconCircle, { transform: [{ scale: pulseAnim }] }]}>
+          <Text style={styles.iconText}>🏛️</Text>
         </Animated.View>
+        <Text style={styles.title}>Ward 18</Text>
+        <Text style={styles.subtitle}>Smart Citizen Portal</Text>
+      </Animated.View>
 
-        {/* Onboarding Indicators */}
-        <View style={styles.dotsContainer}>
-          {slides.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                currentSlide === index ? styles.dotActive : styles.dotInactive
-              ]}
-            />
-          ))}
-        </View>
-
-        {/* Action Buttons */}
-        <TouchableOpacity
-          style={styles.primaryButton}
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={styles.primaryButtonText}>Get Started</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate('Register')}
-        >
-          <Text style={styles.secondaryButtonText}>
-            New resident? <Text style={styles.signUpText}>Create an account</Text>
-          </Text>
-        </TouchableOpacity>
+      {/* Initializing Indicator */}
+      <View style={styles.footer}>
+        <ActivityIndicator size="small" color="#FFFFFF" style={styles.spinner} />
       </View>
     </View>
   );
@@ -128,127 +102,49 @@ export const SplashScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  header: {
-    alignItems: 'center',
-  },
-  headerText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 1,
-  },
-  headerSubtitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: 24,
-  },
-  illustrationCard: {
-    width: '100%',
-    height: height * 0.32,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-  },
-  illustrationImage: {
-    width: '100%',
-    height: '100%',
-  },
-  bottomCard: {
-    width: '100%',
     backgroundColor: COLORS.primary,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 28,
-    paddingTop: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.20,
-    shadowRadius: 16,
-    elevation: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  iconText: {
+    fontSize: 44,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: '800',
-    color: COLORS.white,
-    textAlign: 'center',
-    marginBottom: 10,
-    letterSpacing: 0.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.8,
   },
-  description: {
+  subtitle: {
     fontSize: 14,
-    color: COLORS.white,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 28,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  dot: {
-    height: 6,
-    borderRadius: 3,
-    marginHorizontal: 4,
-  },
-  dotActive: {
-    width: 18,
-    backgroundColor: COLORS.white,
-  },
-  dotInactive: {
-    width: 6,
-    backgroundColor: COLORS.border,
-  },
-  primaryButton: {
-    width: '100%',
-    height: 52,
-    backgroundColor: COLORS.white,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 6,
     letterSpacing: 0.5,
   },
-  secondaryButton: {
-    width: '100%',
-    height: 40,
-    justifyContent: 'center',
+  footer: {
+    position: 'absolute',
+    bottom: 50,
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  secondaryButtonText: {
-    fontSize: 15,
-    color: COLORS.white,
-    fontWeight: '500',
+  spinner: {
+    marginRight: 8,
   },
-  signUpText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
+
 });
