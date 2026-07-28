@@ -9,22 +9,44 @@ import {
   ActivityIndicator,
   ScrollView,
   StatusBar,
-  Alert,
+  Modal,
   Dimensions,
-  Platform,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Video from 'react-native-video';
+import { useDispatch } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
+import { getProfile, setLogout } from '../store/authSlice';
 
 const { width } = Dimensions.get('window');
 
 export const PendingScreen = ({ navigation }: any) => {
+  const dispatch = useDispatch<any>();
   const [checking, setChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<string>('Just now');
-  const [copied, setCopied] = useState(false);
+
+  // Custom Alert Dialog state
+  const [alertDialog, setAlertDialog] = useState<{
+    visible: boolean;
+    type: 'approved' | 'pending' | 'logout' | null;
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText?: string;
+    onConfirm: () => void;
+  }>({
+    visible: false,
+    type: null,
+    title: '',
+    message: '',
+    confirmText: 'OK',
+    onConfirm: () => {},
+  });
+
+  const hideAlertDialog = () => {
+    setAlertDialog(prev => ({ ...prev, visible: false }));
+  };
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -88,7 +110,7 @@ export const PendingScreen = ({ navigation }: any) => {
     return () => pulseLoop.stop();
   }, [pulseAnim, glowAnim, cardFadeAnim, cardSlideAnim]);
 
-  const handleCheckStatus = () => {
+  const handleCheckStatus = async () => {
     setChecking(true);
     rotateAnim.setValue(0);
 
@@ -99,29 +121,38 @@ export const PendingScreen = ({ navigation }: any) => {
       easing: Easing.bezier(0.4, 0, 0.2, 1),
     }).start();
 
-    setTimeout(() => {
+    try {
+      const profileData: any = await dispatch(getProfile());
       setChecking(false);
       const now = new Date();
       const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setLastChecked(`Today at ${timeString}`);
 
-      Alert.alert(
-        'Status Checked',
-        'Your application is actively under review by Ward 18 Verification Officer. Would you like to proceed to demo dashboard?',
-        [
-          { text: 'Wait Here', style: 'cancel' },
-          {
-            text: 'Go to App Demo',
-            onPress: () => navigation.replace('MainTabs'),
+      if (profileData?.status === 'active') {
+        setAlertDialog({
+          visible: true,
+          type: 'approved',
+          title: 'Verification Approved!',
+          message: 'Your account has been verified successfully by Ward 18 Verification Officer.',
+          confirmText: 'Continue to Home',
+          onConfirm: () => {
+            hideAlertDialog();
+            navigation.replace('MainTabs');
           },
-        ]
-      );
-    }, 1600);
-  };
-
-  const handleCopyRef = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+        });
+      } else {
+        setAlertDialog({
+          visible: true,
+          type: 'pending',
+          title: 'Status Checked',
+          message: 'Your application is actively under review by Ward 18 Verification Officer.',
+          confirmText: 'Got It',
+          onConfirm: hideAlertDialog,
+        });
+      }
+    } catch (err) {
+      setChecking(false);
+    }
   };
 
   const handleContactSupport = () => {
@@ -129,21 +160,19 @@ export const PendingScreen = ({ navigation }: any) => {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout Confirmation',
-      'Are you sure you want to log out from your profile verification session?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => navigation.replace('Login'),
-        },
-      ]
-    );
+    setAlertDialog({
+      visible: true,
+      type: 'logout',
+      title: 'Logout Confirmation',
+      message: 'Are you sure you want to log out from your profile verification session?',
+      confirmText: 'Logout',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        hideAlertDialog();
+        dispatch(setLogout());
+        navigation.replace('Login');
+      },
+    });
   };
 
   const spin = rotateAnim.interpolate({
@@ -209,24 +238,6 @@ export const PendingScreen = ({ navigation }: any) => {
             width: '100%',
           }}
         >
-          {/* Ref Number Card */}
-          <View style={styles.refCard}>
-            <View style={styles.refCardLeft}>
-              <Text style={styles.refLabel}>APPLICATION ID</Text>
-              <Text style={styles.refValue}>REF-2026-WD18-9842</Text>
-            </View>
-            <TouchableOpacity style={styles.copyBtn} onPress={handleCopyRef}>
-              <CustomIcon
-                name={copied ? 'checkmark-circle' : 'copy-outline'}
-                size={18}
-                color={copied ? COLORS.primary : COLORS.textSecondary}
-              />
-              <Text style={[styles.copyBtnText, copied && { color: COLORS.primary }]}>
-                {copied ? 'Copied' : 'Copy'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
           {/* Verification Timeline Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -344,6 +355,76 @@ export const PendingScreen = ({ navigation }: any) => {
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Custom Alert Dialog Modal */}
+      <Modal
+        visible={alertDialog.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={hideAlertDialog}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={hideAlertDialog}
+          />
+          <View style={styles.dialogCard}>
+            <View
+              style={[
+                styles.dialogIconCircle,
+                alertDialog.type === 'approved' && { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' },
+                alertDialog.type === 'pending' && { backgroundColor: '#E3F2FD', borderColor: COLORS.primary },
+                alertDialog.type === 'logout' && { backgroundColor: '#FFEBEE', borderColor: COLORS.danger },
+              ]}
+            >
+              <CustomIcon
+                name={
+                  alertDialog.type === 'approved'
+                    ? 'checkmark-circle'
+                    : alertDialog.type === 'logout'
+                    ? 'log-out'
+                    : 'time-outline'
+                }
+                size={32}
+                color={
+                  alertDialog.type === 'approved'
+                    ? '#2E7D32'
+                    : alertDialog.type === 'logout'
+                    ? COLORS.danger
+                    : COLORS.primary
+                }
+              />
+            </View>
+
+            <Text style={styles.dialogTitle}>{alertDialog.title}</Text>
+            <Text style={styles.dialogMessage}>{alertDialog.message}</Text>
+
+            <View style={styles.dialogActions}>
+              {alertDialog.cancelText && (
+                <TouchableOpacity
+                  style={[styles.dialogBtn, styles.dialogCancelBtn]}
+                  onPress={hideAlertDialog}
+                >
+                  <Text style={styles.dialogCancelBtnText}>{alertDialog.cancelText}</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.dialogBtn,
+                  styles.dialogConfirmBtn,
+                  alertDialog.type === 'logout' && { backgroundColor: COLORS.danger },
+                  alertDialog.type === 'approved' && { backgroundColor: '#2E7D32' },
+                ]}
+                onPress={alertDialog.onConfirm}
+              >
+                <Text style={styles.dialogConfirmBtnText}>{alertDialog.confirmText}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -412,49 +493,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: 10,
     marginBottom: 24,
-  },
-  refCard: {
-    width: '100%',
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  refCardLeft: {
-    flex: 1,
-  },
-  refLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  refValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  copyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  copyBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginLeft: 4,
   },
   card: {
     width: '100%',
@@ -685,6 +723,79 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.danger,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  dialogCard: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  dialogIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1.5,
+  },
+  dialogTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  dialogMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  dialogActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+  },
+  dialogBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dialogCancelBtn: {
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  dialogCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  dialogConfirmBtn: {
+    backgroundColor: COLORS.primary,
+  },
+  dialogConfirmBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.white,
   },
 });
 

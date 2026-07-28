@@ -8,6 +8,12 @@ export const rootUrl = 'http://192.168.1.102:3430/api/v1';
 
 const authUrl = rootUrl + "/user";
 const wardUrl = rootUrl + "/ward";
+const contactsUrl = rootUrl + "/important-contacts";
+const announcementUrl = rootUrl + "/announcement";
+const sanitationUrl = rootUrl + "/sanitation";
+const govtSchemeUrl = rootUrl + "/govt-scheme";
+const emergencyUrl = rootUrl + "/emergency-alert";
+const campaignUrl = rootUrl + "/campaign";
 
 // ========== auth ==========
 
@@ -25,8 +31,14 @@ async function getProfile() {
     });
 };
 
-async function updateProfile(name: string, email: string) {
-    return await axios.patch(authUrl + "/profile", { name, email }, {
+async function updateProfile(data: any) {
+    return await axios.patch(authUrl + "/profile", data, {
+        headers: await authHeader("")
+    });
+};
+
+async function updateReminder(reminderEnabled: boolean) {
+    return await axios.patch(authUrl + "/reminder", { reminderEnabled }, {
         headers: await authHeader("")
     });
 };
@@ -47,7 +59,49 @@ async function getWards() {
     return await axios.get(wardUrl + "/list");
 };
 
+async function getImportantContacts(params?: { wardId?: string; search?: string; type?: string }) {
+    return await axios.get(contactsUrl + "/user", {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
+async function getAnnouncements(params?: { wardId?: string; search?: string; category?: string; page?: number; limit?: number }) {
+    return await axios.get(announcementUrl + "/user", {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
+async function getSanitationSchedule(params?: { wardId?: string }) {
+    return await axios.get(sanitationUrl + "/user", {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
+async function getGovtSchemes(params?: { wardId?: string; search?: string; category?: string }) {
+    return await axios.get(govtSchemeUrl + "/user", {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
+async function getEmergencyAlerts(params?: { wardId?: string }) {
+    return await axios.get(emergencyUrl + "/user", {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
+async function getCampaigns(params?: { wardId?: string }) {
+    return await axios.get(campaignUrl + "/user", {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
 export const service = {
-    sendOtp, verifyOtp, sendRegistrationOtp, registerUser, getProfile, updateProfile, getWards,
+    sendOtp, verifyOtp, sendRegistrationOtp, registerUser, getProfile, updateProfile, updateReminder, getWards, getImportantContacts, getAnnouncements, getSanitationSchedule, getGovtSchemes, getEmergencyAlerts, getCampaigns,
 };
 

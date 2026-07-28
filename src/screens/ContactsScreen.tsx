@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,83 +8,29 @@ import {
   TextInput,
   Linking,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface ContactItem {
-  id: string;
-  name: string;
-  role: string;
-  number: string;
-  category: 'Helplines' | 'Municipal Officers' | 'Ward Representatives';
-}
+import { fetchImportantContacts, ContactItem } from '../store/contactsSlice';
+import { AppDispatch, RootState } from '../store/store';
+import { Skeleton } from '../components/Skeleton';
 
 export const ContactsScreen = ({ navigation }: any) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { contacts, loading } = useSelector((state: RootState) => state.contacts);
+  const { user } = useSelector((state: RootState) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const contacts: ContactItem[] = [
-    {
-      id: 'c1',
-      name: 'Sanitation Helpline',
-      role: 'Waste & Garbage Collection Complaints',
-      number: '1800-345-6789',
-      category: 'Helplines',
-    },
-    {
-      id: 'c2',
-      name: 'Electricity Board Help',
-      role: 'Power Outage & Fuse Repair Support',
-      number: '1912',
-      category: 'Helplines',
-    },
-    {
-      id: 'c3',
-      name: 'Ambulance Service',
-      role: 'Municipal Medical Emergency Helpline',
-      number: '108',
-      category: 'Helplines',
-    },
-    {
-      id: 'c4',
-      name: 'Dr. Ramesh Prasad',
-      role: 'Chief Ward Sanitary Inspector',
-      number: '+919876543210',
-      category: 'Municipal Officers',
-    },
-    {
-      id: 'c5',
-      name: 'Er. S. K. Nair',
-      role: 'Assistant Water Works Engineer',
-      number: '+918765432109',
-      category: 'Municipal Officers',
-    },
-    {
-      id: 'c6',
-      name: 'Mrs. Anjali Sharma',
-      role: 'Municipal Grievance Officer',
-      number: '+917654321098',
-      category: 'Municipal Officers',
-    },
-    {
-      id: 'c7',
-      name: 'Dharmendra Singh',
-      role: 'Ward 18 Counselor',
-      number: '+919988776655',
-      category: 'Ward Representatives',
-    },
-    {
-      id: 'c8',
-      name: 'Mrs. Geeta Roy',
-      role: 'Community Development Lead',
-      number: '+918877665544',
-      category: 'Ward Representatives',
-    },
-  ];
+  const wardId = typeof user?.wardId === 'object' ? user?.wardId?._id : user?.wardId;
+
+  useEffect(() => {
+    dispatch(fetchImportantContacts({ wardId }));
+  }, [dispatch, wardId]);
 
   const handleDial = (number: string) => {
-    // Strip hyphens and spaces for clean dialer loading
     const cleanNumber = number.replace(/[^0-9+]/g, '');
     Linking.openURL(`tel:${cleanNumber}`).catch(() => {
       Alert.alert(
@@ -95,41 +41,29 @@ export const ContactsScreen = ({ navigation }: any) => {
   };
 
   const filteredContacts = contacts.filter((c) => {
-    const matchesSearch =
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.number.includes(searchQuery);
-    return matchesSearch;
+    const name = c.title || '';
+    const desc = c.desc || '';
+    const no = c.no || '';
+    const type = c.type || '';
+    const query = searchQuery.toLowerCase();
+
+    return (
+      name.toLowerCase().includes(query) ||
+      desc.toLowerCase().includes(query) ||
+      no.includes(query) ||
+      type.toLowerCase().includes(query)
+    );
   });
 
-  const helplines = filteredContacts.filter((c) => c.category === 'Helplines');
-  const officers = filteredContacts.filter((c) => c.category === 'Municipal Officers');
-  const reps = filteredContacts.filter((c) => c.category === 'Ward Representatives');
-
-  const renderContactSection = (title: string, list: ContactItem[]) => {
-    if (list.length === 0) return null;
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionHeaderTitle}>{title}</Text>
-        {list.map((item) => (
-          <View key={item.id} style={styles.contactCard}>
-            <View style={styles.contactDetails}>
-              <Text style={styles.contactName}>{item.name}</Text>
-              <Text style={styles.contactRole}>{item.role}</Text>
-              <Text style={styles.contactNumber}>{item.number}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.dialButton}
-              activeOpacity={0.7}
-              onPress={() => handleDial(item.number)}
-            >
-              <CustomIcon name="phone" size={18} color={COLORS.primary} />
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-    );
-  };
+  // Group contacts by type
+  const groupedContacts = filteredContacts.reduce((acc: { [key: string]: ContactItem[] }, item) => {
+    const key = item.type ? item.type.toUpperCase() : 'OTHER CONTACTS';
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(item);
+    return acc;
+  }, {});
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -159,12 +93,43 @@ export const ContactsScreen = ({ navigation }: any) => {
           />
         </View>
 
-        {/* Sections */}
-        {filteredContacts.length > 0 ? (
+        {/* Loading Indicator */}
+        {loading ? (
           <View style={styles.listContainer}>
-            {renderContactSection('Emergency & Toll-Free Helplines', helplines)}
-            {renderContactSection('Municipal Corporation Officers', officers)}
-            {renderContactSection('Ward Representatives', reps)}
+            {[1, 2, 3, 4].map((key) => (
+              <View key={key} style={styles.contactCard}>
+                <View style={styles.contactDetails}>
+                  <Skeleton width="60%" height={18} borderRadius={4} style={{ marginBottom: 6 }} />
+                  <Skeleton width="85%" height={14} borderRadius={4} style={{ marginBottom: 8 }} />
+                  <Skeleton width="40%" height={14} borderRadius={4} />
+                </View>
+                <Skeleton width={44} height={44} borderRadius={22} />
+              </View>
+            ))}
+          </View>
+        ) : Object.keys(groupedContacts).length > 0 ? (
+          <View style={styles.listContainer}>
+            {Object.entries(groupedContacts).map(([groupTitle, list]) => (
+              <View key={groupTitle} style={styles.section}>
+                <Text style={styles.sectionHeaderTitle}>{groupTitle}</Text>
+                {list.map((item) => (
+                  <View key={item._id || item.id || item.no} style={styles.contactCard}>
+                    <View style={styles.contactDetails}>
+                      <Text style={styles.contactName}>{item.title}</Text>
+                      {item.desc ? <Text style={styles.contactRole}>{item.desc}</Text> : null}
+                      <Text style={styles.contactNumber}>{item.no}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.dialButton}
+                      activeOpacity={0.7}
+                      onPress={() => handleDial(item.no)}
+                    >
+                      <CustomIcon name="phone" size={18} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
         ) : (
           <View style={styles.emptyContainer}>
@@ -293,6 +258,20 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
     lineHeight: 18,
+  },
+  typeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.primary,
+    textTransform: 'uppercase',
   },
   contactNumber: {
     fontSize: 13,

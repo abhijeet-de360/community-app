@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,83 +11,15 @@ import {
   Platform,
   Modal,
 } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface EmergencyAlertItem {
-  id: string;
-  title: string;
-  severity: 'Critical' | 'Warning' | 'Info';
-  message: string;
-  timestamp: string;
-}
+import { AppDispatch, RootState } from '../store/store';
+import { Skeleton } from '../components/Skeleton';
 
 export const EmergencyScreen = ({ navigation }: any) => {
-  const [isAdminFormVisible, setIsAdminFormVisible] = useState(false);
-
-  // Initial mock alerts list
-  const [alerts, setAlerts] = useState<EmergencyAlertItem[]>([
-    {
-      id: 'alt-1',
-      title: 'Flash Flood Warning - Ward 18',
-      severity: 'Critical',
-      message: 'Heavy rain has caused extreme water logging near NH-29. Residents are advised to stay indoors and avoid low-lying underpasses.',
-      timestamp: '10 mins ago',
-    },
-    {
-      id: 'alt-2',
-      title: 'High Voltage Power Grid Maintenance',
-      severity: 'Warning',
-      message: 'Scheduled maintenance work at the primary substation. Power supply will be shut down in Sectors C & D from 1:00 PM to 4:00 PM.',
-      timestamp: '2 hours ago',
-    },
-  ]);
-
-  // Admin form state
-  const [adminTitle, setAdminTitle] = useState('');
-  const [adminSeverity, setAdminSeverity] = useState<'Critical' | 'Warning' | 'Info'>('Critical');
-  const [adminMessage, setAdminMessage] = useState('');
-
-  const handleCreateAlert = () => {
-    if (!adminTitle.trim()) {
-      Alert.alert('Error', 'Please enter an alert title.');
-      return;
-    }
-    if (!adminMessage.trim()) {
-      Alert.alert('Error', 'Please enter alert details/message.');
-      return;
-    }
-
-    const newAlert: EmergencyAlertItem = {
-      id: `alt-${Math.floor(100 + Math.random() * 900)}`,
-      title: adminTitle.trim(),
-      severity: adminSeverity,
-      message: adminMessage.trim(),
-      timestamp: 'Just now',
-    };
-
-    setAlerts([newAlert, ...alerts]);
-
-    Alert.alert(
-      'Alert Published',
-      'The emergency alert has been broadcasted and is now visible on the citizens dashboard.',
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Reset form fields
-            setAdminTitle('');
-            setAdminSeverity('Critical');
-            setAdminMessage('');
-            // Hide modal
-            setIsAdminFormVisible(false);
-          },
-        },
-      ]
-    );
-  };
-
+  const { alerts, loading } = useSelector((state: RootState) => state.emergency);
   const getSeverityStyle = (severity: string) => {
     switch (severity) {
       case 'Critical':
@@ -131,12 +63,29 @@ export const EmergencyScreen = ({ navigation }: any) => {
 
       {/* Main Alerts Feed */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {alerts.length > 0 ? (
-          alerts.map((item) => {
-            const stylesSeverity = getSeverityStyle(item.severity);
+        {loading ? (
+          <View>
+            {[1, 2, 3].map((key) => (
+              <View key={key} style={styles.alertCard}>
+                <View style={styles.alertHeaderRow}>
+                  <Skeleton width={100} height={16} borderRadius={4} />
+                  <Skeleton width={70} height={14} borderRadius={4} />
+                </View>
+                <Skeleton width="80%" height={22} borderRadius={6} style={{ marginBottom: 8 }} />
+                <Skeleton width="100%" height={16} borderRadius={4} style={{ marginBottom: 4 }} />
+                <Skeleton width="65%" height={16} borderRadius={4} />
+              </View>
+            ))}
+          </View>
+        ) : Array.isArray(alerts) && alerts.length > 0 ? (
+          alerts.map((item: any, idx: number) => {
+            const severity = item.severity || 'Info';
+            const stylesSeverity = getSeverityStyle(severity);
+            const displayDate = item.datePublished || (item.createdAt ? new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent');
+
             return (
               <View
-                key={item.id}
+                key={item._id || item.id || idx}
                 style={[
                   styles.alertCard,
                   {
@@ -154,17 +103,16 @@ export const EmergencyScreen = ({ navigation }: any) => {
                       ]}
                     />
                     <Text style={[styles.severityLabel, { color: stylesSeverity.text }]}>
-                      {item.severity} Alert
+                      {severity} Alert
                     </Text>
                   </View>
-                  <Text style={styles.timestampText}>{item.timestamp}</Text>
+                  <Text style={styles.timestampText}>{displayDate}</Text>
                 </View>
 
                 <Text style={[styles.alertTitle, { color: stylesSeverity.text }]}>
                   {item.title}
                 </Text>
                 <Text style={styles.alertMessage}>{item.message}</Text>
-
               </View>
             );
           })
@@ -174,120 +122,7 @@ export const EmergencyScreen = ({ navigation }: any) => {
             <Text style={styles.emptyText}>All Clear! No active emergency alerts at this time.</Text>
           </View>
         )}
-      </ScrollView>
-
-      {/* Floating Action Button for admin alert creation */}
-      <TouchableOpacity
-        style={styles.fabButton}
-        activeOpacity={0.85}
-        onPress={() => setIsAdminFormVisible(true)}
-      >
-        <CustomIcon name="megaphone" size={24} color={COLORS.white} />
-      </TouchableOpacity>
-
-      {/* Broadcast Form Bottom Sheet Modal */}
-      <Modal
-        visible={isAdminFormVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsAdminFormVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.modalContent}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.formTitle}>Broadcast Emergency Warning</Text>
-              <TouchableOpacity onPress={() => setIsAdminFormVisible(false)}>
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.formSubtitle}>
-                Alerts published here will immediately broadcast to all citizen dashboards.
-              </Text>
-
-              {/* Title */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Alert Title</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="e.g., Landslide Road Blockage NH-29"
-                  placeholderTextColor={COLORS.greyMedium}
-                  value={adminTitle}
-                  onChangeText={setAdminTitle}
-                />
-              </View>
-
-              {/* Severity Selection */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Severity Level</Text>
-                <View style={styles.severitySelectorContainer}>
-                  {(['Critical', 'Warning', 'Info'] as const).map((level) => {
-                    const isSelected = adminSeverity === level;
-                    
-                    let activeChipStyle = styles.chipInfoActive;
-                    let activeTextStyle = styles.textInfoActive;
-                    
-                    if (level === 'Critical') {
-                      activeChipStyle = styles.chipCriticalActive;
-                      activeTextStyle = styles.textCriticalActive;
-                    } else if (level === 'Warning') {
-                      activeChipStyle = styles.chipWarningActive;
-                      activeTextStyle = styles.textWarningActive;
-                    }
-
-                    return (
-                      <TouchableOpacity
-                        key={level}
-                        style={[
-                          styles.severityChip,
-                          isSelected && activeChipStyle,
-                        ]}
-                        activeOpacity={0.8}
-                        onPress={() => setAdminSeverity(level)}
-                      >
-                        <Text
-                          style={[
-                            styles.severityChipText,
-                            isSelected && activeTextStyle,
-                          ]}
-                        >
-                          {level}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Description Message */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Detailed Message & Instructions</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textArea]}
-                  placeholder="Avoid NH-29 bypass road due to active landslide. Use Alternate Main Bazar route instead..."
-                  placeholderTextColor={COLORS.greyMedium}
-                  multiline
-                  numberOfLines={4}
-                  value={adminMessage}
-                  onChangeText={setAdminMessage}
-                />
-              </View>
-              {/* Publish Action */}
-              <TouchableOpacity
-                style={styles.publishBtn}
-                activeOpacity={0.8}
-                onPress={handleCreateAlert}
-              >
-                <Text style={styles.publishBtnText}>Publish Broadcast</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
+      </ScrollView>    
     </SafeAreaView>
   );
 };

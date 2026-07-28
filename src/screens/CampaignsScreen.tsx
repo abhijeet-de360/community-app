@@ -7,98 +7,114 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { RootState } from '../store/store';
+import { Skeleton } from '../components/Skeleton';
+import { ICampaign } from '../store/campaignSlice';
 
-interface Campaign {
-  id: string;
-  title: string;
-  type: 'Cleanliness' | 'Health Screening' | 'Health' | 'Awareness' | 'Other';
-  date: string;
-  time: string;
-  location: string;
-  description: string;
-  organizer: string;
-  status: 'Upcoming' | 'Active' | 'Completed';
-}
+const CAMPAIGN_TYPES = ['All', 'Cleanliness', 'Health Screening', 'Awareness', 'Other'] as const;
+
+const getStatusBadgeColors = (status: string) => {
+  switch (status) {
+    case 'Upcoming': return { bg: '#E3F2FD', text: '#1565C0' };
+    case 'Active':   return { bg: '#E8F5E9', text: '#2E7D32' };
+    case 'Expired':  return { bg: '#FFF3E0', text: '#E65100' };
+    default:         return { bg: '#EEEEEE', text: '#616161' };
+  }
+};
+
+const CampaignCard = ({ camp, navigation }: { camp: ICampaign; navigation: any }) => {
+  const statusColors = getStatusBadgeColors(camp.status);
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.typeBadgeContainer}>
+          <Text style={styles.typeText}>{camp.type}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+          <Text style={[styles.statusText, { color: statusColors.text }]}>{camp.status}</Text>
+        </View>
+      </View>
+
+      <Text style={styles.cardTitle}>{camp.title}</Text>
+
+      <View style={styles.scheduleRow}>
+        <CustomIcon name="calendar" size={13} color={COLORS.textSecondary} />
+        <Text style={styles.scheduleText}>{camp.date}</Text>
+        <View style={styles.bulletSeparator} />
+        <CustomIcon name="schedule" size={13} color={COLORS.textSecondary} />
+        <Text style={styles.scheduleText}>{camp.time?.split('-')[0]?.trim() || camp.time}</Text>
+      </View>
+
+      <Text style={styles.cardDesc} numberOfLines={2}>{camp.description}</Text>
+
+      <View style={styles.cardFooter}>
+        <View style={styles.locationContainer}>
+          <CustomIcon name="home" size={13} color={COLORS.textSecondary} />
+          <Text style={styles.locationText} numberOfLines={1}>{camp.venue}</Text>
+        </View>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.detailsBtn}
+          onPress={() => navigation.navigate('CampaignDetails', { campaign: { ...camp, location: camp.venue } })}
+        >
+          <Text style={styles.detailsBtnText}>View Details →</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const SkeletonCard = () => (
+  <View style={[styles.card, { gap: 10 }]}>
+    <View style={styles.cardHeader}>
+      <Skeleton width={80} height={20} borderRadius={6} />
+      <Skeleton width={70} height={20} borderRadius={6} />
+    </View>
+    <Skeleton width="80%" height={22} borderRadius={6} />
+    <Skeleton width={160} height={16} borderRadius={4} />
+    <Skeleton width="100%" height={16} borderRadius={4} />
+    <Skeleton width="60%" height={16} borderRadius={4} />
+    <View style={styles.cardFooter}>
+      <Skeleton width={120} height={16} borderRadius={4} />
+      <Skeleton width={80} height={16} borderRadius={4} />
+    </View>
+  </View>
+);
 
 export const CampaignsScreen = ({ navigation }: any) => {
+  const { campaigns, loading } = useSelector((state: RootState) => state.campaign);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All');
 
-  const campaigns: Campaign[] = [
-    {
-      id: 'camp-1',
-      title: 'Ward 18 Cleanliness Drive (Swachhta)',
-      type: 'Cleanliness',
-      date: 'Saturday, July 25, 2026',
-      time: '07:30 AM - 10:30 AM',
-      location: 'Cathedral Sector Park',
-      description: 'Weekly cleaning campaign focusing on plastic segregation and neighborhood clean-up. Hand gloves, garbage bags, and refreshments will be provided to all volunteers.',
-      organizer: 'Ward 18 Sanitary Team',
-      status: 'Upcoming',
-    },
-    {
-      id: 'camp-2',
-      title: 'Free Health Screening Camp',
-      type: 'Health',
-      date: 'Sunday, July 26, 2026',
-      time: '09:00 AM - 02:00 PM',
-      location: 'Community Hall, Kohima Town',
-      description: 'Basic health diagnostics including blood pressure, sugar screening, and consultation with general physicians and pediatricians. Medicines will be distributed free of cost.',
-      organizer: 'Municipal Health Welfare Board',
-      status: 'Upcoming',
-    },
-    {
-      id: 'camp-3',
-      title: 'Water Segregation & Harvesting Seminar',
-      type: 'Awareness',
-      date: 'Wednesday, July 29, 2026',
-      time: '04:00 PM - 06:00 PM',
-      location: 'Ward 18 Recreation Hall',
-      description: 'Interactive session to educate citizens on rainwater harvesting setups and domestic water saving methods before the peak monsoon. Technical experts will demonstrate models.',
-      organizer: 'Water Works Department',
-      status: 'Upcoming',
-    },
-    {
-      id: 'camp-4',
-      title: 'Anti-Dengue & Fumigation Drive',
-      type: 'Cleanliness',
-      date: 'July 15, 2026',
-      time: '08:00 AM - 12:00 PM',
-      location: 'High School Hill Sector',
-      description: 'Intensive fogging operations and clearing water-logging pockets to eradicate mosquito breeding grounds. Health booklets distributed door-to-door.',
-      organizer: 'Vector Control Unit',
-      status: 'Completed',
-    },
-  ];
-
-  const types = ['All', 'Cleanliness', 'Health Screening', 'Awareness', 'Other'];
-
-  const filteredCampaigns = campaigns.filter((camp) => {
-    const matchesType = selectedType === 'All' || camp.type === selectedType;
-    const matchesSearch =
-      camp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      camp.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      camp.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesType && matchesSearch;
+  // Frontend filter
+  const filtered = campaigns.filter((c) => {
+    const matchType = selectedType === 'All' || c.type === selectedType;
+    const q = searchQuery.toLowerCase();
+    const matchSearch =
+      !q ||
+      c.title.toLowerCase().includes(q) ||
+      c.description?.toLowerCase().includes(q) ||
+      c.venue?.toLowerCase().includes(q);
+    return matchType && matchSearch;
   });
 
-  const getStatusBadgeColors = (status: string) => {
-    switch (status) {
-      case 'Upcoming':
-        return { bg: '#E3F2FD', text: '#1565C0' };
-      case 'Active':
-        return { bg: '#E8F5E9', text: '#2E7D32' };
-      default:
-        return { bg: '#EEEEEE', text: '#616161' };
-    }
-  };
+  // Group by type
+  const grouped = filtered.reduce<Record<string, ICampaign[]>>((acc, c) => {
+    const key = c.type || 'Other';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(c);
+    return acc;
+  }, {});
+
+  const groupKeys = Object.keys(grouped).sort();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header aligned to other screens */}
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Ward Campaigns</Text>
       </View>
@@ -123,88 +139,50 @@ export const CampaignsScreen = ({ navigation }: any) => {
           style={styles.categoriesContainer}
           contentContainerStyle={styles.categoriesContent}
         >
-          {types.map((t) => {
+          {CAMPAIGN_TYPES.map((t) => {
             const isSelected = selectedType === t;
             return (
               <TouchableOpacity
                 key={t}
-                style={[
-                  styles.categoryChip,
-                  isSelected && styles.categoryChipSelected,
-                ]}
+                style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
                 activeOpacity={0.8}
                 onPress={() => setSelectedType(t)}
               >
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    isSelected && styles.categoryChipTextSelected,
-                  ]}
-                >
-                  {t}
-                </Text>
+                <Text style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}>{t}</Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
 
-        {/* Cards List */}
-        <View style={styles.listContainer}>
-          {filteredCampaigns.length > 0 ? (
-            filteredCampaigns.map((camp) => {
-              const statusColors = getStatusBadgeColors(camp.status);
-              return (
-                <View key={camp.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.typeBadgeContainer}>
-                      <Text style={styles.typeText}>{camp.type}</Text>
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
-                      <Text style={[styles.statusText, { color: statusColors.text }]}>
-                        {camp.status}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.cardTitle}>{camp.title}</Text>
-                  
-                  {/* Schedule Snippet */}
-                  <View style={styles.scheduleRow}>
-                    <CustomIcon name="calendar" size={13} color={COLORS.textSecondary} />
-                    <Text style={styles.scheduleText}>{camp.date.split(',')[1]?.trim() || camp.date}</Text>
-                    <View style={styles.bulletSeparator} />
-                    <CustomIcon name="time" size={13} color={COLORS.textSecondary} />
-                    <Text style={styles.scheduleText}>{camp.time.split('-')[0]?.trim() || camp.time}</Text>
-                  </View>
-
-                  <Text style={styles.cardDesc} numberOfLines={2}>
-                    {camp.description}
-                  </Text>
-
-                  <View style={styles.cardFooter}>
-                    <View style={styles.locationContainer}>
-                      <CustomIcon name="home" size={13} color={COLORS.textSecondary} />
-                      <Text style={styles.locationText} numberOfLines={1}>
-                        {camp.location}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      style={styles.detailsBtn}
-                      onPress={() => navigation.navigate('CampaignDetails', { campaign: camp })}
-                    >
-                      <Text style={styles.detailsBtnText}>View Details →</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No drives or campaigns found matching your query.</Text>
+        {/* Content */}
+        {loading ? (
+          <View>
+            {[1, 2, 3].map((k) => <SkeletonCard key={k} />)}
+          </View>
+        ) : groupKeys.length > 0 ? (
+          groupKeys.map((type) => (
+            <View key={type}>
+              {/* Group Header */}
+              <View style={styles.groupHeader}>
+                <View style={styles.groupHeaderLine} />
+                <Text style={styles.groupHeaderText}>{type}</Text>
+                <View style={styles.groupHeaderLine} />
+              </View>
+              {grouped[type].map((camp) => (
+                <CampaignCard
+                  key={camp._id || camp.campaignId}
+                  camp={camp}
+                  navigation={navigation}
+                />
+              ))}
             </View>
-          )}
-        </View>
+          ))
+        ) : (
+          <View style={styles.emptyContainer}>
+            <CustomIcon name="megaphone" size={40} color={COLORS.greyMedium} />
+            <Text style={styles.emptyText}>No campaigns found matching your query.</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -232,7 +210,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 100, // offset bottom tabs
+    paddingBottom: 100,
   },
   searchBarContainer: {
     flexDirection: 'row',
@@ -244,7 +222,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 48,
     marginBottom: 16,
-    // Soft shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
@@ -285,8 +262,24 @@ const styles = StyleSheet.create({
   categoryChipTextSelected: {
     color: COLORS.white,
   },
-  listContainer: {
-    marginTop: 4,
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    marginTop: 6,
+  },
+  groupHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  groupHeaderText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginHorizontal: 10,
   },
   card: {
     backgroundColor: COLORS.white,
@@ -295,7 +288,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     padding: 16,
     marginBottom: 16,
-    // Soft shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
@@ -393,7 +385,8 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
+    gap: 12,
   },
   emptyText: {
     color: COLORS.textSecondary,

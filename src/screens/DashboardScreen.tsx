@@ -6,108 +6,32 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Image,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Skeleton } from '../components/Skeleton';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 48;
 
 export const DashboardScreen = ({ navigation }: any) => {
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const { user } = useSelector((state: any) => state.auth);
+  const { announcements, loading } = useSelector((state: any) => state.announcement);
 
-  const announcements = [
-    {
-      id: 'ann-1',
-      badge: 'NOTICE',
-      time: 'Today at 7:00 AM',
-      title: 'Cleanliness Drive this Saturday',
-      body: "Join us for Ward 18's weekly cleanliness drive focusing on plastic segregation and neighborhood clean-up.",
-      bgColor: '#028A3C',
-      badgeColor: 'rgba(255, 255, 255, 0.2)',
-      // fds
-      // dfsd
-      targetRoute: 'CampaignDetails',
-      params: {
-        campaign: {
-          id: 'camp-1',
-          title: 'Ward 18 Cleanliness Drive (Swachhta)',
-          type: 'Cleanliness' as const,
-          date: 'Saturday, July 25, 2026',
-          time: '07:30 AM - 10:30 AM',
-          location: 'Cathedral Sector Park',
-          description: 'Weekly cleaning campaign focusing on plastic segregation and neighborhood clean-up. Hand gloves, garbage bags, and refreshments will be provided to all volunteers.',
-          organizer: 'Ward 18 Sanitary Team',
-          status: 'Upcoming' as const,
-        }
-      }
-    },
-    {
-      id: 'ann-2',
-      badge: 'HEALTH CAMP',
-      time: 'Yesterday',
-      title: 'Free Health Screening Sunday',
-      body: 'Basic diagnostics, sugar/BP tests, and consultation with pediatricians and general physicians. Medicines free of cost.',
-      bgColor: '#0F766E',
-      badgeColor: 'rgba(255, 255, 255, 0.2)',
-      targetRoute: 'CampaignDetails',
-      params: {
-        campaign: {
-          id: 'camp-2',
-          title: 'Free Health Screening Camp',
-          type: 'Health' as const,
-          date: 'Sunday, July 26, 2026',
-          time: '09:00 AM - 02:00 PM',
-          location: 'Community Hall, Kohima Town',
-          description: 'Basic health diagnostics including blood pressure, sugar screening, and consultation with general physicians and pediatricians. Medicines will be distributed free of cost.',
-          organizer: 'Municipal Health Welfare Board',
-          status: 'Upcoming' as const,
-        }
-      }
-    },
-    {
-      id: 'ann-3',
-      badge: 'SEMINAR',
-      time: '2 days ago',
-      title: 'Water Harvesting Workshop',
-      body: 'Learn how to set up rainwater harvesting and domestic water-saving systems before the peak monsoon season.',
-      bgColor: '#1E40AF',
-      badgeColor: 'rgba(255, 255, 255, 0.2)',
-      targetRoute: 'CampaignDetails',
-      params: {
-        campaign: {
-          id: 'camp-3',
-          title: 'Water Segregation & Harvesting Seminar',
-          type: 'Awareness' as const,
-          date: 'Wednesday, July 29, 2026',
-          time: '04:00 PM - 06:00 PM',
-          location: 'Ward 18 Recreation Hall',
-          description: 'Interactive session to educate citizens on rainwater harvesting setups and domestic water saving methods before the peak monsoon. Technical experts will demonstrate models.',
-          organizer: 'Water Works Department',
-          status: 'Upcoming' as const,
-        }
-      }
-    },
-    {
-      id: 'ann-4',
-      badge: 'MAINTENANCE',
-      time: '3 days ago',
-      title: 'Zone B Water Pipeline Repair',
-      body: 'Urgent repairs scheduled on Tuesday, July 21st. Water supply will be suspended in Zone B from 10 AM to 2 PM.',
-      bgColor: '#B45309',
-      badgeColor: 'rgba(255, 255, 255, 0.2)',
-      targetRoute: 'Schedule',
-      params: {}
-    }
-  ];
+  const colors = ['#028A3C', '#0F766E', '#1E40AF', '#B45309', '#6B21A8'];
 
   const handleScroll = (event: any) => {
     const slideSize = CARD_WIDTH + 12;
+    const count = Array.isArray(announcements) ? announcements.length : 0;
+    if (count === 0) return;
     const index = Math.max(
       0,
       Math.min(
-        announcements.length - 1,
+        count - 1,
         Math.round(event.nativeEvent.contentOffset.x / slideSize)
       )
     );
@@ -133,13 +57,21 @@ export const DashboardScreen = ({ navigation }: any) => {
       iconColor: '#1565C0'
     },
     {
-      id: 'report_issue',
-      label: 'Report an Issue',
-      icon: 'complaint',
-      targetRoute: 'Complaints',
-      iconBg: '#FFF3E0',
-      iconColor: '#E65100'
+      id: 'campaigns',
+      label: 'Campaigns',
+      icon: 'campaign',
+      targetRoute: 'Campaigns',
+      iconBg: '#E8F5E9',
+      iconColor: '#2E7D32'
     },
+    // {
+    //   id: 'report_issue',
+    //   label: 'Report an Issue',
+    //   icon: 'complaint',
+    //   targetRoute: 'Complaints',
+    //   iconBg: '#FFF3E0',
+    //   iconColor: '#E65100'
+    // },
     {
       id: 'gov_schemes',
       label: 'Govt Schemes',
@@ -182,16 +114,24 @@ export const DashboardScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Top Header Card */}
       <View style={styles.header}>
-        <View style={styles.userInfo}>
+        <TouchableOpacity
+          style={styles.userInfo}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Profile')}
+        >
           {/* Avatar circle */}
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>DS</Text>
+            {user?.profile ? (
+              <Image source={{ uri: user.profile }} style={styles.avatarImage} />
+            ) : (
+              null
+            )}
           </View>
           <View style={styles.userTextContainer}>
             <Text style={styles.welcomeText}>{getGreeting()},</Text>
-            <Text style={styles.wardText}>Dharmedra Singh</Text>
+            <Text style={styles.wardText}>{user?.name}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.notificationBell}
           activeOpacity={0.7}
@@ -208,7 +148,7 @@ export const DashboardScreen = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>Latest Announcement</Text>
           <TouchableOpacity
             activeOpacity={0.6}
-            onPress={() => navigation.navigate('Campaigns')}
+            onPress={() => navigation.navigate('LatestAnnouncements')}
           >
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
@@ -224,31 +164,56 @@ export const DashboardScreen = ({ navigation }: any) => {
             onScroll={handleScroll}
             scrollEventThrottle={16}
           >
-            {announcements.map((ann) => (
-              <View key={ann.id} style={[styles.announcementCard, { backgroundColor: ann.bgColor, width: CARD_WIDTH }]}>
-                <View style={styles.announcementHeader}>
-                  <View style={[styles.announcementBadge, { backgroundColor: ann.badgeColor }]}>
-                    <Text style={styles.announcementBadgeText}>{ann.badge}</Text>
-                  </View>
-                  <Text style={styles.announcementTime}>{ann.time}</Text>
+            {loading ? (
+              <View style={[styles.announcementCard, { backgroundColor: '#F1F5F9', width: CARD_WIDTH, padding: 16 }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Skeleton width={70} height={20} borderRadius={6} />
+                  <Skeleton width={80} height={16} borderRadius={4} />
                 </View>
-                <Text style={styles.announcementTitle}>{ann.title}</Text>
-                <Text style={styles.announcementBody} numberOfLines={2} ellipsizeMode="tail">
-                  {ann.body}
-                </Text>
-                <TouchableOpacity
-                  style={styles.announcementLink}
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate(ann.targetRoute, ann.params)}
-                >
-                  <Text style={styles.announcementLinkText}>Read details →</Text>
-                </TouchableOpacity>
+                <Skeleton width="80%" height={22} borderRadius={6} style={{ marginBottom: 8 }} />
+                <Skeleton width="100%" height={16} borderRadius={4} style={{ marginBottom: 4 }} />
+                <Skeleton width="60%" height={16} borderRadius={4} style={{ marginBottom: 14 }} />
+                <Skeleton width={100} height={18} borderRadius={4} />
               </View>
-            ))}
+            ) : Array.isArray(announcements) && announcements.length > 0 ? (
+              announcements.map((ann: any, idx: number) => (
+                <View key={ann._id || ann.id || idx} style={[styles.announcementCard, { backgroundColor: colors[idx % colors.length], width: CARD_WIDTH }]}>
+                  <View style={styles.announcementHeader}>
+                    <View style={[styles.announcementBadge, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                      <Text style={styles.announcementBadgeText}>{(ann.category || 'NOTICE').toUpperCase()}</Text>
+                    </View>
+                    <Text style={styles.announcementTime}>
+                      {ann.createdAt ? new Date(ann.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.announcementTitle}>{ann.title}</Text>
+                  <Text style={styles.announcementBody} numberOfLines={2} ellipsizeMode="tail">
+                    {ann.description || ann.body || ''}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.announcementLink}
+                    activeOpacity={0.7}
+                    onPress={() => navigation.navigate('LatestAnnouncements')}
+                  >
+                    <Text style={styles.announcementLinkText}>Read details →</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : (
+              <View style={[styles.announcementCard, { backgroundColor: '#028A3C', width: CARD_WIDTH }]}>
+                <View style={styles.announcementHeader}>
+                  <View style={[styles.announcementBadge, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                    <Text style={styles.announcementBadgeText}>INFO</Text>
+                  </View>
+                </View>
+                <Text style={styles.announcementTitle}>No Announcements</Text>
+                <Text style={styles.announcementBody}>There are no announcements for your ward right now.</Text>
+              </View>
+            )}
           </ScrollView>
 
           <View style={styles.paginationContainer}>
-            {announcements.map((_, index) => (
+            {Array.isArray(announcements) && announcements.length > 1 && announcements.map((_, index) => (
               <View
                 key={index}
                 style={[
@@ -332,6 +297,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   avatarText: {
     color: COLORS.white,

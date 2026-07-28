@@ -10,9 +10,9 @@ const showNativeToast = (msg: string) => {
 };
 
 export const errorHandler = async (res: any) => {
-  if (res?.status === 401) {
-    await localService.clearAll();
-  }
+  // if (res?.status === 401) {
+  //   await localService.clearAll();
+  // }
 
   const message = Array.isArray(res?.data?.message)
     ? res.data.message[0]

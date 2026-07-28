@@ -8,11 +8,13 @@ import {
   Easing,
   ActivityIndicator
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { localService } from '../shared/_session/local';
+import { getProfile } from '../store/authSlice';
 
 export const SplashScreen = ({ navigation }: any) => {
+  const dispatch = useDispatch<any>();
   const logoScale = useRef(new Animated.Value(0.8)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -54,21 +56,43 @@ export const SplashScreen = ({ navigation }: any) => {
     );
     loopPulse.start();
 
-    // 3. Check authentication and navigate after 2 seconds
+    // 3. Splash check: fetch profile & check status for redirection
+    let isMounted = true;
     const timer = setTimeout(async () => {
       const token = await localService.get('token');
+
       if (token || isAuthenticated) {
-        navigation.replace('MainTabs');
+        try {
+          const profileData: any = await dispatch(getProfile());
+
+          if (isMounted) {
+            const userStatus = profileData?.status;
+            if (userStatus === 'active') {
+              navigation.replace('MainTabs');
+            } else if (userStatus === 'pending') {
+              navigation.replace('Pending');
+            } else {
+              navigation.replace('Onboarding');
+            }
+          }
+        } catch (err) {
+          if (isMounted) {
+            navigation.replace('Onboarding');
+          }
+        }
       } else {
-        navigation.replace('Onboarding');
+        if (isMounted) {
+          navigation.replace('Onboarding');
+        }
       }
     }, 2000);
 
     return () => {
+      isMounted = false;
       clearTimeout(timer);
       loopPulse.stop();
     };
-  }, [navigation, logoOpacity, logoScale, pulseAnim, isAuthenticated]);
+  }, [navigation, logoOpacity, logoScale, pulseAnim, isAuthenticated, dispatch]);
 
   return (
     <View style={styles.container}>

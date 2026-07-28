@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,107 +7,59 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface Scheme {
-  id: string;
-  title: string;
-  category: string;
-  badge: 'Active' | 'New' | 'Closing Soon';
-  description: string;
-  benefits: string;
-  eligibility: string;
-  portalUrl: string;
-  notificationUrl?: string;
-  documents?: string;
-}
+import { AppDispatch, RootState } from '../store/store';
+import { Skeleton } from '../components/Skeleton';
 
 export const GovSchemesScreen = ({ navigation }: any) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { schemes, loading } = useSelector((state: RootState) => state.scheme);
+  const { user } = useSelector((state: RootState) => state.auth);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const schemes: Scheme[] = [
-    {
-      id: 'sch-1',
-      title: 'PM SVANidhi (Street Vendor Loan)',
-      category: 'Financial',
-      badge: 'Active',
-      description: 'Providing micro-credit facility for street vendors to resume their livelihoods post pandemic.',
-      benefits: '• Working capital loan of up to ₹10,000.\n• Interest subsidy of 7% per annum on timely repayment.\n• Cashbacks up to ₹1,200/yr on digital transactions.',
-      eligibility: '• Active street vendors in urban or rural municipal areas.\n• Possess Certificate of Vending or Identity Card.',
-      portalUrl: 'https://pmsvanidhi.mohua.gov.in',
-      notificationUrl: 'https://elmley-craft.files.svdcdn.com/production/files/1-Test_PDF.pdf',
-      documents: '• Certificate of Vending / Identity Card\n• Aadhaar Card / Voter ID Card\n• Active Mobile Number linked to Aadhaar\n• Bank Account Passbook (with IFSC)',
-    },
-    {
-      id: 'sch-2',
-      title: 'Urban Household Toilet Subsidy',
-      category: 'Sanitation',
-      badge: 'Active',
-      description: 'Financial assistance under Swachh Bharat Abhiyan for constructing private household toilets.',
-      benefits: '• Direct Benefit Transfer (DBT) of ₹12,000 in two equal installments.\n• Free technical construction guidelines from municipal engineers.',
-      eligibility: '• Urban households lacking safe sanitary toilet facilities.\n• Family income falls below specified municipal threshold.',
-      portalUrl: 'https://swachhbharatmission.gov.in',
-      notificationUrl: 'https://elmley-craft.files.svdcdn.com/production/files/1-Test_PDF.pdf',
-      documents: '• Aadhaar Card / ID Proof\n• Bank Account Passbook (copy for DBT payment)\n• Photograph of current toilet site\n• Household Income Certificate',
-    },
-    {
-      id: 'sch-3',
-      title: 'PMAY-Urban (Affordable Housing)',
-      category: 'Housing',
-      badge: 'Active',
-      description: 'Credit-linked subsidy scheme aiming to make housing affordable for the urban poor.',
-      benefits: '• Interest subsidy up to 6.5% on home loans.\n• Subsidy amount up to ₹2.67 Lakhs credited directly to loan account.',
-      eligibility: '• Beneficiary family must not own a pucca house anywhere in India.\n• EWS (income up to ₹3L/yr) or LIG (income up to ₹6L/yr).',
-      portalUrl: 'https://pmay-urban.gov.in',
-      notificationUrl: 'https://elmley-craft.files.svdcdn.com/production/files/1-Test_PDF.pdf',
-      documents: '• Aadhaar Card / PAN Card\n• Income Proof (Salary slip / Form 16 / ITR)\n• Affidavit certifying no pucca house ownership in India\n• Property purchase / loan documents',
-    },
-    {
-      id: 'sch-4',
-      title: 'Jal Jeevan Tap Connection',
-      category: 'Water Supply',
-      badge: 'New',
-      description: 'Ensuring safe, piped tap water connection directly to household kitchens.',
-      benefits: '• Free installation of functional tap water pipeline.\n• Zero initial connection charges.\n• Regular water quality check updates via ward office.',
-      eligibility: '• All urban/suburban homes currently relying on shared community hand pumps or tankers.',
-      portalUrl: 'https://jaljeevanmission.gov.in',
-      notificationUrl: 'https://elmley-craft.files.svdcdn.com/production/files/1-Test_PDF.pdf',
-      documents: '• Property ownership document (Registry copy)\n• Latest Property Tax payment receipt\n• Aadhaar Card of homeowner\n• Electricity Bill showing active address',
-    },
-    {
-      id: 'sch-5',
-      title: 'Senior Citizen Pension Scheme',
-      category: 'Financial',
-      badge: 'Active',
-      description: 'Monthly social security financial support for elderly community citizens.',
-      benefits: '• Direct monthly pension of ₹1,000 credited on the 1st of every month.\n• Free medical checkups at state government hospitals.',
-      eligibility: '• Age must be 60 years or above.\n• Resident of the state with no active source of private regular income.',
-      portalUrl: 'https://nsap.nic.in',
-      notificationUrl: 'https://elmley-craft.files.svdcdn.com/production/files/1-Test_PDF.pdf',
-      documents: '• Age Proof (Birth certificate / School certificate / Aadhaar)\n• Income Certificate (verifying no private regular income)\n• Bank Passbook (for pension deposits)\n• Domicile/Residence Certificate',
-    },
-  ];
+  const wardId = typeof user?.wardId === 'object' ? user?.wardId?._id : user?.wardId;
 
-  const categories = ['All', 'Financial', 'Sanitation', 'Housing', 'Water Supply'];
+  
 
-  const handleViewDetails = (scheme: Scheme) => {
-    navigation.navigate('SchemeDetails', { scheme });
+  // Dynamically extract categories from loaded schemes
+  const rawCategories = Array.isArray(schemes)
+    ? Array.from(new Set(schemes.map((s: any) => s.category).filter(Boolean)))
+    : [];
+  const categories = ['All', ...rawCategories];
+
+  const handleViewDetails = (item: any) => {
+    const formattedScheme = {
+      ...item,
+      title: item.name || item.title || 'Govt Scheme',
+      description: item.overview || item.description || '',
+      benefits: Array.isArray(item.keyBenefits) ? item.keyBenefits.map((b: string) => `• ${b}`).join('\n') : item.keyBenefits || item.benefits || '',
+      eligibility: Array.isArray(item.eligibility) ? item.eligibility.map((e: string) => `• ${e}`).join('\n') : item.eligibility || '',
+      documents: Array.isArray(item.requiredDocuments) ? item.requiredDocuments.map((d: string) => `• ${d}`).join('\n') : item.documents || '',
+      portalUrl: item.applyUrl || item.portalUrl || 'https://india.gov.in',
+      notificationUrl: item.pdfUrl || item.notificationUrl || '',
+    };
+    navigation.navigate('SchemeDetails', { scheme: formattedScheme });
   };
 
-  // Filter schemes by category and search query
-  const filteredSchemes = schemes.filter((scheme) => {
-    const matchesCategory = selectedCategory === 'All' || scheme.category === selectedCategory;
+  // Filter schemes by category and search query in frontend
+  const filteredSchemes = (Array.isArray(schemes) ? schemes : []).filter((scheme: any) => {
+    const title = scheme.name || scheme.title || '';
+    const desc = scheme.overview || scheme.description || '';
+    const cat = scheme.category || '';
+
+    const matchesCategory = selectedCategory === 'All' || cat === selectedCategory;
     const matchesSearch =
-      scheme.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      scheme.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      scheme.category.toLowerCase().includes(searchQuery.toLowerCase());
+      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      cat.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesCategory && matchesSearch;
   });
-
-
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -125,14 +77,6 @@ export const GovSchemesScreen = ({ navigation }: any) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Intro */}
-        {/* <View style={styles.introContainer}>
-          <Text style={styles.mainTitle}>Welfare Schemes</Text>
-          <Text style={styles.subTitle}>
-            Explore and apply for active state and municipal schemes launched for your welfare.
-          </Text>
-        </View> */}
-
         {/* Search Bar */}
         <View style={styles.searchBarContainer}>
           <CustomIcon name="search" size={20} color={COLORS.greyMedium} />
@@ -178,41 +122,61 @@ export const GovSchemesScreen = ({ navigation }: any) => {
         </ScrollView>
 
         {/* Schemes List */}
-        <View style={styles.schemesList}>
-          {filteredSchemes.length > 0 ? (
-            filteredSchemes.map((scheme) => {
-              return (
-                <View key={scheme.id} style={styles.schemeCard}>
-                  {/* Scheme Title (Name) */}
-                  <Text style={styles.schemeTitle}>{scheme.title}</Text>
-
-                  {/* Description */}
-                  <Text style={styles.schemeDesc} numberOfLines={2}>
-                    {scheme.description}
-                  </Text>
-
-                  {/* Footer: Category & View Details */}
-                  <View style={styles.cardFooter}>
-                    <View style={styles.categoryBadgeContainer}>
-                      <Text style={styles.schemeCategory}>{scheme.category}</Text>
-                    </View>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => handleViewDetails(scheme)}
-                      style={styles.viewDetailsBtn}
-                    >
-                      <Text style={styles.viewDetailsText}>View Details →</Text>
-                    </TouchableOpacity>
-                  </View>
+        {loading ? (
+          <View style={styles.schemesList}>
+            {[1, 2, 3, 4].map((key) => (
+              <View key={key} style={styles.schemeCard}>
+                <Skeleton width="75%" height={22} borderRadius={6} style={{ marginBottom: 10 }} />
+                <Skeleton width="100%" height={16} borderRadius={4} style={{ marginBottom: 6 }} />
+                <Skeleton width="60%" height={16} borderRadius={4} style={{ marginBottom: 14 }} />
+                <View style={styles.cardFooter}>
+                  <Skeleton width={80} height={20} borderRadius={6} />
+                  <Skeleton width={90} height={16} borderRadius={4} />
                 </View>
-              );
-            })
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No active schemes found matching your search.</Text>
-            </View>
-          )}
-        </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.schemesList}>
+            {filteredSchemes.length > 0 ? (
+              filteredSchemes.map((scheme: any, idx: number) => {
+                const title = scheme.name || scheme.title || '';
+                const desc = scheme.overview || scheme.description || '';
+                const cat = scheme.category || 'General';
+
+                return (
+                  <View key={scheme._id || scheme.id || idx} style={styles.schemeCard}>
+                    {/* Scheme Title (Name) */}
+                    <Text style={styles.schemeTitle}>{title}</Text>
+
+                    {/* Description */}
+                    <Text style={styles.schemeDesc} numberOfLines={2}>
+                      {desc}
+                    </Text>
+
+                    {/* Footer: Category & View Details */}
+                    <View style={styles.cardFooter}>
+                      <View style={styles.categoryBadgeContainer}>
+                        <Text style={styles.schemeCategory}>{cat}</Text>
+                      </View>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => handleViewDetails(scheme)}
+                        style={styles.viewDetailsBtn}
+                      >
+                        <Text style={styles.viewDetailsText}>View Details →</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No government schemes found.</Text>
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

@@ -12,7 +12,14 @@ const STATUS = Object.freeze({
   LOADING: "loading",
 });
 
-const initialState = {
+interface AuthState {
+  user: any;
+  status: string;
+  isAuthenticated: boolean;
+  isLoginModalOpen: boolean;
+}
+
+const initialState: AuthState = {
   user: null,
   status: STATUS.IDLE,
   isAuthenticated: false,
@@ -23,7 +30,7 @@ export const authSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUserData(state, { payload }) {
+    setUserData(state: AuthState, { payload }) {
       if (payload.user) {
         state.user = payload.user;
       }
@@ -32,20 +39,40 @@ export const authSlice = createSlice({
       }
       state.isAuthenticated = true;
     },
-    setProfileData(state, { payload }) {
-      state.user = payload
+    setProfileData(state: AuthState, { payload }) {
+      state.user = payload;
+      state.isAuthenticated = true;
     },
-    updateUserData(state, { payload }) {
-      state.user = payload.result;
+    updateUserData(state: AuthState, { payload }) {
+      if (payload?.result) {
+        state.user = payload.result;
+      } else if (payload?.user) {
+        state.user = payload.user;
+      } else if (payload && typeof payload === 'object') {
+        state.user = state.user && typeof state.user === 'object' ? Object.assign({}, state.user, payload) : payload;
+      }
     },
-    updateProfileImage(state, { payload }) {
-      state.user.profile = payload.profile;
+    updateProfileImage(state: AuthState, { payload }) {
+      if (state.user && payload?.profile) {
+        (state.user as any).profile = payload.profile;
+      }
     },
-    setStatus(state, { payload }) {
+    setStatus(state: AuthState, { payload }) {
       state.status = payload;
+    },
+    setPendingStatus(state: AuthState) {
+      if (state.user) {
+        (state.user as any).status = 'pending';
+      }
+    },
+    setReminderStatus(state: AuthState, { payload }) {
+      if (state.user) {
+        (state.user as any).reminderEnabled = payload;
+      }
     },
     setLogout(state) {
       localService.clearAll();
+      state.user = null;
       state.isAuthenticated = false;
     },
     setLoginModalOpen(state, {payload}){
@@ -54,7 +81,7 @@ export const authSlice = createSlice({
   },
 });
 
-export const { setUserData, setStatus, updateUserData, updateProfileImage, setProfileData, setLoginModalOpen, setLogout } = authSlice.actions;
+export const { setUserData, setStatus, updateUserData, updateProfileImage, setProfileData, setPendingStatus, setReminderStatus, setLoginModalOpen, setLogout } = authSlice.actions;
 export default authSlice.reducer;
 
 //thunks
@@ -138,71 +165,70 @@ export function verifyOtp(data: any) {
 }
 
 export function getProfile() {
-  return async function getProfileThunk(dispatch) {
+  return async function getProfileThunk(dispatch:any) {
     dispatch(setStatus(STATUS.LOADING));
     dispatch(setLoading(true));
     try {
-      await service.getProfile().then((res) => {
-        dispatch(setProfileData(res.data));
-        dispatch(setStatus(STATUS.IDLE));
-        dispatch(setLoading(false));
-      })
-        .catch((err) => {
-          dispatch(setStatus(STATUS.ERROR));
-          dispatch(setLoading(false));
-          errorHandler(err.response);
-        });
-    } catch (error) {
+      const res = await service.getProfile();
+      dispatch(setProfileData(res.data));
+      dispatch(setStatus(STATUS.IDLE));
+      dispatch(setLoading(false));
+      return res.data;
+    } catch (err: any) {
       dispatch(setStatus(STATUS.ERROR));
       dispatch(setLoading(false));
-      errorHandler(error.response);
+      dispatch(setLogout());
+      errorHandler(err?.response);
+      throw err;
     }
   };
 }
 
-export function updateProfile(data, setOpen) {
-  return async function updateProfileThunk(dispatch) {
+export function updateProfile(data: any) {
+  return async function updateProfileThunk(dispatch: any) {
     dispatch(setStatus(STATUS.LOADING));
     dispatch(setLoading(true));
     try {
-      await service.updateProfile(data.name, data.email).then((res) => {
-        dispatch(updateUserData(res.data));
-        if (data.imageFile) {
-          service.uploadImage(data.imageFile).then((res) => {
-            dispatch(updateProfileImage(res.data))
-            successHandler("Profile updated successfully");
-          })
-        } else {
-          successHandler("Profile updated successfully");
-        }
-        dispatch(setStatus(STATUS.IDLE));
-        dispatch(setLoading(false));
-        setOpen(false);
-      })
-        .catch((err) => {
-          dispatch(setStatus(STATUS.ERROR));
-          dispatch(setLoading(false));
-          errorHandler(err.response);
-        });
-      setOpen(false);
-    } catch (error) {
+      const res = await service.updateProfile(data);
+      dispatch(updateUserData(res.data));
+      dispatch(setPendingStatus());
+      dispatch(setStatus(STATUS.IDLE));
+      dispatch(setLoading(false));
+      successHandler("Profile updated and submitted for re-verification");
+      return res.data;
+    } catch (err: any) {
       dispatch(setStatus(STATUS.ERROR));
       dispatch(setLoading(false));
-      errorHandler(error.response);
+      errorHandler(err?.response);
+      throw err;
     }
   };
 };
 
-export function logoutUser(navigate) {
-  return async function logoutUserThunk(dispatch) {
+export function logoutUser(navigate:any) {
+  return async function logoutUserThunk(dispatch:any) {
     dispatch(setLogout());
     navigate("/");
     successHandler("Logout successfully.")
   }
 };
 
-export function loginModalOpen(data){
-  return async function loginModalOpenThunbk(dispatch){
+export function loginModalOpen(data:any){
+  return async function loginModalOpenThunbk(dispatch:any){
     dispatch(setLoginModalOpen(data));
   }
+}
+
+export function updateReminderToggle(reminderEnabled: boolean) {
+  return async function updateReminderToggleThunk(dispatch: any) {
+    try {
+      const res = await service.updateReminder(reminderEnabled);
+      const user = res.data?.result || res.data;
+      dispatch(setReminderStatus(user.reminderEnabled ?? reminderEnabled));
+      return user;
+    } catch (err: any) {
+      errorHandler(err?.response);
+      throw err;
+    }
+  };
 }

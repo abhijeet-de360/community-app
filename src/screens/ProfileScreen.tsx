@@ -18,7 +18,10 @@ import { CustomIcon } from '../components/CustomIcon';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const WARD_OPTIONS = [
+import { useDispatch, useSelector } from 'react-redux';
+import { setLogout, setPendingStatus, updateProfile } from '../store/authSlice';
+
+const DEFAULT_WARD_OPTIONS = [
   'Ward 18 - New Reserve',
   'Ward 18 - Kohima Town',
   'Ward 18 - Cathedral Area',
@@ -27,14 +30,50 @@ const WARD_OPTIONS = [
 ];
 
 export const ProfileScreen = ({ navigation }: any) => {
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
-  const [name, setName] = useState('Dharmendra Singh');
-  const mobile = '+91 99887 76655';
-  const epicNumber = 'EPIC123456789';
-  const [ward, setWard] = useState('Ward 18 - New Reserve');
-  const [address, setAddress] = useState('House No. 142, New Reserve Sector, Ward 18');
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: any) => state.auth);
+  const { wards } = useSelector((state: any) => state.ward);
+
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.profile || null);
+  const [name, setName] = useState(user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : ''));
+  const [ward, setWard] = useState<string>('');
+  const [selectedWardId, setSelectedWardId] = useState<string | null>(null);
+  const [address, setAddress] = useState(user?.address || '');
+
+  const mobile = user?.phoneNumber || user?.phone || 'N/A';
+  const epicNumber = user?.epicNumber || user?.epicNo || 'N/A';
+
+  const wardItems = Array.isArray(wards) && wards.length > 0 ? wards : DEFAULT_WARD_OPTIONS;
+
+  React.useEffect(() => {
+    if (user) {
+      if (user.name || user.firstName) {
+        setName(user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim());
+      }
+      if (user.address) {
+        setAddress(user.address);
+      }
+      if (user.profile) {
+        setProfilePhoto(user.profile);
+      }
+      if (user.wardId) {
+        const id = typeof user.wardId === 'object' ? (user.wardId._id || user.wardId.id) : user.wardId;
+        setSelectedWardId(id);
+        if (typeof user.wardId === 'object' && (user.wardId.fullName || user.wardId.name)) {
+          setWard(user.wardId.fullName || user.wardId.name);
+        } else if (Array.isArray(wards) && wards.length > 0) {
+          const matched = wards.find((w: any) => (w._id || w.id) === id);
+          if (matched) {
+            setWard(matched.fullName || matched.name);
+          }
+        }
+      }
+    }
+  }, [user, wards]);
   
   const [showWardModal, setShowWardModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   // Focus states
   const [nameFocused, setNameFocused] = useState(false);
@@ -64,18 +103,39 @@ export const ProfileScreen = ({ navigation }: any) => {
       Alert.alert('Validation Error', 'Full Name cannot be empty.');
       return;
     }
-    Alert.alert('Profile Updated', 'Your profile details have been saved successfully.');
+    setShowUpdateModal(true);
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to log out from Community App?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: () => navigation.replace('Splash') },
-      ]
-    );
+  const confirmUpdateProfile = async () => {
+    setShowUpdateModal(false);
+    try {
+      await dispatch(updateProfile({ name, address, wardId: selectedWardId }) as any);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Pending' }],
+      });
+    } catch (err) {
+      console.error('Failed to update profile', err);
+    }
+  };
+
+  const selectWardItem = (item: any) => {
+    if (typeof item === 'object') {
+      setWard(item.fullName || item.name);
+      setSelectedWardId(item._id || item.id);
+    } else {
+      setWard(item);
+    }
+    setShowWardModal(false);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    dispatch(setLogout());
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Onboarding' }],
+    });
   };
 
   const selectWard = (selected: string) => {
@@ -223,7 +283,7 @@ export const ProfileScreen = ({ navigation }: any) => {
             <TouchableOpacity
               style={styles.logoutButton}
               activeOpacity={0.8}
-              onPress={handleLogout}
+              onPress={() => setShowLogoutModal(true)}
             >
               <Text style={styles.logoutButtonText}>Logout Account</Text>
             </TouchableOpacity>
@@ -254,18 +314,20 @@ export const ProfileScreen = ({ navigation }: any) => {
               </View>
               
               <FlatList
-                data={WARD_OPTIONS}
-                keyExtractor={(item) => item}
+                data={wardItems}
+                keyExtractor={(item: any) => typeof item === 'object' ? (item._id || item.id) : item}
                 contentContainerStyle={styles.modalList}
                 renderItem={({ item }) => {
-                  const isActive = ward === item;
+                  const label = typeof item === 'object' ? (item.fullName || item.name) : item;
+                  const itemId = typeof item === 'object' ? (item._id || item.id) : item;
+                  const isActive = ward === label || selectedWardId === itemId;
                   return (
                     <TouchableOpacity
                       style={[styles.modalItem, isActive && styles.modalItemActive]}
-                      onPress={() => selectWard(item)}
+                      onPress={() => selectWardItem(item)}
                     >
                       <Text style={[styles.modalItemText, isActive && styles.modalItemTextActive]}>
-                        {item}
+                        {label}
                       </Text>
                       {isActive && (
                         <View style={styles.selectedTick}>
@@ -279,6 +341,87 @@ export const ProfileScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Soft Logout Confirmation Dialog Modal */}
+      <Modal
+        visible={showLogoutModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.dialogOverlay}>
+          <TouchableOpacity
+            style={styles.dialogDismissTrigger}
+            activeOpacity={1}
+            onPress={() => setShowLogoutModal(false)}
+          />
+          <View style={styles.dialogContainer}>
+            <View style={styles.dialogIconBadge}>
+              <CustomIcon name="log-out" size={24} color={COLORS.danger} />
+            </View>
+            <Text style={styles.dialogTitle}>Log Out?</Text>
+            <Text style={styles.dialogMessage}>
+              Are you sure you want to log out from Ward 18 Community Notification App?
+            </Text>
+            <View style={styles.dialogActionRow}>
+              <TouchableOpacity
+                style={[styles.dialogButton, styles.dialogCancelButton]}
+                activeOpacity={0.8}
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={styles.dialogCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dialogButton, styles.dialogConfirmButton]}
+                activeOpacity={0.8}
+                onPress={confirmLogout}
+              >
+                <Text style={styles.dialogConfirmText}>Yes, Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Update Profile Confirmation Dialog Modal */}
+      <Modal
+        visible={showUpdateModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View style={styles.dialogOverlay}>
+          <TouchableOpacity
+            style={styles.dialogDismissTrigger}
+            activeOpacity={1}
+            onPress={() => setShowUpdateModal(false)}
+          />
+          <View style={styles.dialogContainer}>
+            <View style={[styles.dialogIconBadge, { backgroundColor: '#E8F5E9' }]}>
+              <CustomIcon name="create" size={24} color={COLORS.primary} />
+            </View>
+            <Text style={styles.dialogTitle}>Update Profile?</Text>
+            <Text style={styles.dialogMessage}>
+              Updating your profile details will send your account for verification again. Are you sure you want to update?
+            </Text>
+            <View style={styles.dialogActionRow}>
+              <TouchableOpacity
+                style={[styles.dialogButton, styles.dialogCancelButton]}
+                activeOpacity={0.8}
+                onPress={() => setShowUpdateModal(false)}
+              >
+                <Text style={styles.dialogCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dialogButton, { backgroundColor: COLORS.primary }]}
+                activeOpacity={0.8}
+                onPress={confirmUpdateProfile}
+              >
+                <Text style={styles.dialogConfirmText}>Confirm & Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -558,5 +701,78 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 1,
+  },
+  dialogOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  dialogDismissTrigger: {
+    ...StyleSheet.absoluteFill,
+  },
+  dialogContainer: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  dialogIconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FDE8E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dialogTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  dialogMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  dialogActionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dialogButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dialogCancelButton: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  dialogCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  dialogConfirmButton: {
+    backgroundColor: COLORS.danger,
+  },
+  dialogConfirmText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.white,
   },
 });

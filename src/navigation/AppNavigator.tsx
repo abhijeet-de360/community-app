@@ -31,6 +31,7 @@ import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { HelplineScreen } from '../screens/HelplineScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SplashScreen } from '../screens/SplashScreen';
+import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -186,6 +187,7 @@ export const AppNavigator = () => {
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
       <Stack.Screen name="Helpline" component={HelplineScreen} />
+      <Stack.Screen name="LatestAnnouncements" component={AnnouncementsScreen} />
     </Stack.Navigator>
   );
 };
