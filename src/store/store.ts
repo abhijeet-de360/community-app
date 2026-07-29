@@ -8,6 +8,7 @@ import sanitationReducer from './sanitationSlice';
 import schemeReducer from './schemeSlice';
 import emergencyReducer from './emergencySlice';
 import campaignReducer from './campaignSlice';
+import notificationReducer from './notificationSlice';
 
 
 export const store = configureStore({
@@ -21,6 +22,7 @@ export const store = configureStore({
     scheme: schemeReducer,
     emergency: emergencyReducer,
     campaign: campaignReducer,
+    notification: notificationReducer,
   },
   devTools: true,
 })

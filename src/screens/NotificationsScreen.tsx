@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,79 +6,120 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppDispatch, RootState } from '../store/store';
+import {
+  markNotificationRead,
+  markAllNotificationsRead,
+  INotificationItem,
+  NotificationType,
+} from '../store/notificationSlice';
+import { Skeleton } from '../components/Skeleton';
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  body: string;
-  time: string;
-  type: 'success' | 'info' | 'alert';
-  read: boolean;
-}
+// ─── Icon config by type ──────────────────────────────────────────────────────
+
+const getIconConfig = (type: NotificationType) => {
+  switch (type) {
+    case 'EmergencyAlert':
+      return { name: 'emergency', color: '#C62828', bg: '#FFEBEE' };
+    case 'Announcement':
+      return { name: 'announcement', color: '#1565C0', bg: '#E3F2FD' };
+    case 'Campaign':
+      return { name: 'campaign', color: '#2E7D32', bg: '#E8F5E9' };
+    case 'GovtScheme':
+      return { name: 'schemes', color: '#6A1B9A', bg: '#F3E5F5' };
+    case 'SanitationSchedule':
+    case 'ScheduleChange':
+      return { name: 'calendar', color: '#E65100', bg: '#FFF3E0' };
+    default:
+      return { name: 'bell', color: COLORS.primary, bg: COLORS.secondary };
+  }
+};
+
+const formatTime = (createdAt?: string) => {
+  if (!createdAt) return '';
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+// ─── Skeleton row ─────────────────────────────────────────────────────────────
+
+const SkeletonRow = () => (
+  <View style={[styles.card, { gap: 8 }]}>
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+      <Skeleton width={36} height={36} borderRadius={18} style={{ marginRight: 12 }} />
+      <View style={{ flex: 1, gap: 6 }}>
+        <Skeleton width="70%" height={16} borderRadius={4} />
+        <Skeleton width="100%" height={14} borderRadius={4} />
+        <Skeleton width="40%" height={14} borderRadius={4} />
+        <Skeleton width={60} height={12} borderRadius={4} style={{ marginTop: 4 }} />
+      </View>
+    </View>
+  </View>
+);
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export const NotificationsScreen = ({ navigation }: any) => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 'n1',
-      title: 'Water Connection Approved',
-      body: 'Your pipeline installation request under Jal Jeevan Mission has been approved. Ward technicians will visit on Tuesday.',
-      time: '2 hours ago',
-      type: 'success',
-      read: false,
-    },
-    {
-      id: 'n2',
-      title: 'Complaints Update - Garbage Pile',
-      body: 'The garbage pile complaint filed for Ward 18 market has been marked as In Progress. Cleaning crew has been dispatched.',
-      time: '5 hours ago',
-      type: 'info',
-      read: false,
-    },
-    {
-      id: 'n3',
-      title: 'Property Sanitation Tax Reminder',
-      body: 'Sanitation fees for the current quarter are due by July 31. Avoid late fees by paying online in the Payments tab.',
-      time: '1 day ago',
-      type: 'alert',
-      read: true,
-    },
-    {
-      id: 'n4',
-      title: 'Welcome to Community App!',
-      body: 'Your account has been successfully verified. Explore schemes, file ward complaints, and stay informed.',
-      time: '3 days ago',
-      type: 'success',
-      read: true,
-    },
-  ]);
+  const dispatch = useDispatch<AppDispatch>();
+  const { notifications, unreadCount, loading } = useSelector(
+    (state: RootState) => state.notification
+  );
+  const { user } = useSelector((state: RootState) => state.auth);
+  const wardId = typeof user?.wardId === 'object' ? user?.wardId?._id : user?.wardId;
+  const userId = user?._id ? String(user._id) : undefined;
+
+  const handleMarkOneRead = (item: INotificationItem) => {
+    if (!item.isRead && userId) {
+      dispatch(markNotificationRead(item._id, userId));
+    }
+  };
 
   const handleMarkAllRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+    dispatch(markAllNotificationsRead({ wardId, userId }));
   };
 
-  const toggleRead = (id: string) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
+  const renderItem = ({ item }: { item: INotificationItem }) => {
+    const iconConfig = getIconConfig(item.type);
+    return (
+      <TouchableOpacity
+        style={[styles.card, !item.isRead && styles.unreadCard]}
+        activeOpacity={0.8}
+        onPress={() => handleMarkOneRead(item)}
+      >
+        {/* Icon */}
+        <View style={[styles.iconWrapper, { backgroundColor: iconConfig.bg }]}>
+          <CustomIcon name={iconConfig.name} size={18} color={iconConfig.color} />
+        </View>
+
+        {/* Text */}
+        <View style={styles.textContainer}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.cardTitle, !item.isRead && styles.unreadTitle]} numberOfLines={2}>
+              {item.title}
+            </Text>
+            {!item.isRead && <View style={styles.unreadDot} />}
+          </View>
+          <Text style={styles.cardBody} numberOfLines={3}>{item.message}</Text>
+          <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
+        </View>
+      </TouchableOpacity>
     );
-  };
-
-  const getIconConfig = (type: string) => {
-    switch (type) {
-      case 'success':
-        return { name: 'checkmark-circle-outline', color: COLORS.primary, bg: COLORS.secondary };
-      case 'alert':
-        return { name: 'emergency', color: COLORS.danger, bg: '#FFEBEE' };
-      default:
-        return { name: 'profile', color: '#1565C0', bg: '#E3F2FD' };
-    }
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Flat Header same as others */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -91,57 +132,40 @@ export const NotificationsScreen = ({ navigation }: any) => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Mark all as read section */}
+      {/* Sub-header */}
       <View style={styles.subHeader}>
-        <Text style={styles.subTitle}>Recent Updates</Text>
-        {notifications.some((n) => !n.read) && (
+        <Text style={styles.subTitle}>
+          Recent Updates{unreadCount > 0 ? ` · ${unreadCount} new` : ''}
+        </Text>
+        {unreadCount > 0 && (
           <TouchableOpacity activeOpacity={0.7} onPress={handleMarkAllRead}>
             <Text style={styles.markReadText}>Mark all as read</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => {
-          const iconConfig = getIconConfig(item.type);
-          return (
-            <TouchableOpacity
-              style={[styles.notificationCard, !item.read && styles.unreadCard]}
-              activeOpacity={0.8}
-              onPress={() => toggleRead(item.id)}
-            >
-              {/* Type Indicator Icon */}
-              <View style={[styles.iconWrapper, { backgroundColor: iconConfig.bg }]}>
-                <CustomIcon name={iconConfig.name} size={18} color={iconConfig.color} />
-              </View>
-
-              {/* Text Context */}
-              <View style={styles.textContainer}>
-                <View style={styles.titleRow}>
-                  <Text style={[styles.cardTitle, !item.read && styles.unreadText]}>
-                    {item.title}
-                  </Text>
-                  {!item.read && <View style={styles.unreadDot} />}
-                </View>
-                <Text style={styles.cardBody} numberOfLines={3}>
-                  {item.body}
-                </Text>
-                <Text style={styles.timeText}>{item.time}</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <CustomIcon name="bell" size={48} color={COLORS.greyMedium} />
-            <Text style={styles.emptyText}>You have no notifications at this time.</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <FlatList
+          data={[1, 2, 3, 4]}
+          keyExtractor={(i) => String(i)}
+          contentContainerStyle={styles.listContent}
+          renderItem={() => <SkeletonRow />}
+        />
+      ) : (
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={renderItem}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <CustomIcon name="bell" size={48} color={COLORS.greyMedium} />
+              <Text style={styles.emptyText}>No notifications yet.</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -197,7 +221,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
-  notificationCard: {
+  card: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
     borderWidth: 1,
@@ -206,7 +230,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    // Soft shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
@@ -224,6 +247,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    flexShrink: 0,
   },
   textContainer: {
     flex: 1,
@@ -231,7 +255,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   cardTitle: {
     fontSize: 14,
@@ -240,7 +264,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  unreadText: {
+  unreadTitle: {
     fontWeight: '800',
     color: COLORS.textPrimary,
   },
@@ -249,6 +273,8 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.primary,
+    marginTop: 4,
+    flexShrink: 0,
   },
   cardBody: {
     fontSize: 13,

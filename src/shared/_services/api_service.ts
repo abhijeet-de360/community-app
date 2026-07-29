@@ -14,6 +14,7 @@ const sanitationUrl = rootUrl + "/sanitation";
 const govtSchemeUrl = rootUrl + "/govt-scheme";
 const emergencyUrl = rootUrl + "/emergency-alert";
 const campaignUrl = rootUrl + "/campaign";
+const notificationUrl = rootUrl + "/notification";
 
 // ========== auth ==========
 
@@ -101,7 +102,28 @@ async function getCampaigns(params?: { wardId?: string }) {
     });
 };
 
+
+async function getNotifications(params?: { wardId?: string; userId?: string }) {
+    return await axios.get(notificationUrl + "/user", {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
+async function markNotificationRead(id: string, userId: string) {
+    return await axios.patch(notificationUrl + `/${id}/read`, { userId }, {
+        headers: await authHeader(""),
+    });
+};
+
+async function markAllNotificationsRead(params?: { wardId?: string; userId?: string }) {
+    return await axios.patch(notificationUrl + "/read-all", {}, {
+        headers: await authHeader(""),
+        params,
+    });
+};
+
 export const service = {
-    sendOtp, verifyOtp, sendRegistrationOtp, registerUser, getProfile, updateProfile, updateReminder, getWards, getImportantContacts, getAnnouncements, getSanitationSchedule, getGovtSchemes, getEmergencyAlerts, getCampaigns,
+    sendOtp, verifyOtp, sendRegistrationOtp, registerUser, getProfile, updateProfile, updateReminder, getWards, getImportantContacts, getAnnouncements, getSanitationSchedule, getGovtSchemes, getEmergencyAlerts, getCampaigns, getNotifications, markNotificationRead, markAllNotificationsRead,
 };
 

@@ -6,12 +6,15 @@ import {
   StatusBar, 
   Animated, 
   Easing,
-  ActivityIndicator
+  ActivityIndicator,
+  PermissionsAndroid,
+  Platform
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { COLORS } from '../theme/colors';
 import { localService } from '../shared/_session/local';
 import { getProfile } from '../store/authSlice';
+import { requestNotificationPermission } from '../shared/_services/notificationService';
 
 export const SplashScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<any>();
@@ -59,6 +62,7 @@ export const SplashScreen = ({ navigation }: any) => {
     // 3. Splash check: fetch profile & check status for redirection
     let isMounted = true;
     const timer = setTimeout(async () => {
+      await requestNotificationPermission();
       const token = await localService.get('token');
 
       if (token || isAuthenticated) {

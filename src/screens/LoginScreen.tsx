@@ -16,6 +16,7 @@ import { sendOtp, verifyOtp } from '../store/authSlice';
 import { COLORS } from '../theme/colors';
 import { CustomIcon } from '../components/CustomIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getFcmToken } from '../shared/_services/notificationService';
 
 export const LoginScreen = ({ navigation }: any) => {
   const dispatch = useDispatch();
@@ -45,9 +46,12 @@ export const LoginScreen = ({ navigation }: any) => {
     const fullOtp = otp.join('');
     if (fullOtp.length < 6) return;
 
+    const fcmToken = await getFcmToken();
+
     const payload = {
       phoneNumber: mobileNumber,
       otp: fullOtp,
+      ...(fcmToken ? { fcm: fcmToken } : {}),
     };
 
     try {

@@ -10,6 +10,7 @@ import { fetchSanitationSchedule } from './src/store/sanitationSlice';
 import { fetchGovtSchemes } from './src/store/schemeSlice';
 import { fetchEmergencyAlerts } from './src/store/emergencySlice';
 import { fetchCampaigns } from './src/store/campaignSlice';
+import { fetchNotifications } from './src/store/notificationSlice';
 import store, { AppDispatch, RootState } from './src/store/store';
 
 function AppMain() {
@@ -17,6 +18,7 @@ function AppMain() {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const wardId = typeof user?.wardId === 'object' ? user?.wardId?._id : user?.wardId;
+  const userId = user?._id ? String(user._id) : undefined;
 
   useEffect(() => {
     dispatch(fetchWards());
@@ -25,7 +27,8 @@ function AppMain() {
     dispatch(fetchGovtSchemes({ wardId }));
     dispatch(fetchEmergencyAlerts({ wardId }));
     dispatch(fetchCampaigns({ wardId }));
-  }, [dispatch, wardId]);
+    dispatch(fetchNotifications({ wardId, userId }));
+  }, [dispatch, wardId, userId]);
 
   return (
     <SafeAreaProvider>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "229363758918",
+    "project_id": "ward18",
+    "storage_bucket": "ward18.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:229363758918:android:35cb6b0caa0412e6c6d747",
+        "android_client_info": {
+          "package_name": "com.jamirtechnologies.ward18"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRy65igxmvonB_jIWzjhn-rnIEm9W4VA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

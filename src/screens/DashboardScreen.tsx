@@ -21,6 +21,7 @@ export const DashboardScreen = ({ navigation }: any) => {
   const [activeIndex, setActiveIndex] = React.useState(0);
   const { user } = useSelector((state: any) => state.auth);
   const { announcements, loading } = useSelector((state: any) => state.announcement);
+  const { unreadCount } = useSelector((state: any) => state.notification);
 
   const colors = ['#028A3C', '#0F766E', '#1E40AF', '#B45309', '#6B21A8'];
 
@@ -138,7 +139,13 @@ export const DashboardScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate('Notifications')}
         >
           <CustomIcon name="bell" size={20} color={COLORS.textPrimary} />
-          <View style={styles.bellDot} />
+          {unreadCount > 0 && (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -334,16 +341,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  bellDot: {
+  badgeContainer: {
     position: 'absolute',
-    top: 11,
-    right: 12,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    top: 6,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: COLORS.danger,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 9,
+    fontWeight: '800',
+    lineHeight: 12,
   },
   scrollContent: {
     paddingHorizontal: 20,

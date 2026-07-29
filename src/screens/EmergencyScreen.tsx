@@ -46,6 +46,22 @@ export const EmergencyScreen = ({ navigation }: any) => {
     }
   };
 
+  const formatAlertTime = (item: any): string => {
+    // Prefer createdAt for accurate timestamp, fall back to datePublished
+    const raw = item.createdAt || item.datePublished;
+    if (!raw) return 'Recent';
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return String(raw);
+    return d.toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Flat Header same as other screens */}
@@ -81,7 +97,7 @@ export const EmergencyScreen = ({ navigation }: any) => {
           alerts.map((item: any, idx: number) => {
             const severity = item.severity || 'Info';
             const stylesSeverity = getSeverityStyle(severity);
-            const displayDate = item.datePublished || (item.createdAt ? new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent');
+            const displayDate = formatAlertTime(item);
 
             return (
               <View
