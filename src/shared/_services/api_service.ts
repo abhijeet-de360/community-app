@@ -3,7 +3,8 @@ import { Platform } from "react-native";
 import { authHeader } from "../_helper/auth-header";
 
 
-export const rootUrl = 'http://192.168.1.102:3430/api/v1';
+export const rootUrl = 'https://server.digitaledge360.net/api/v1';
+// export const rootUrl = 'http://192.168.1.102:3430/api/v1';
 
 
 const authUrl = rootUrl + "/user";
